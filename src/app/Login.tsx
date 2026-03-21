@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TextInput,
 } from "react-native";
-import Navegacao from "@/components/Navegacao";
+
 
 export default function Login() {
   const [currentScreen, setCurrentScreen] = useState("home");
