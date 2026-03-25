@@ -1,45 +1,46 @@
-import React from "react";
-import {
-  View,
-  Text,
-  ImageBackground,
-  TouchableOpacity,
-  StyleSheet,
-  StatusBar
-} from "react-native";
+import React, { useState } from "react";
+import { View, Text, ImageBackground, TouchableOpacity, StyleSheet, StatusBar } from "react-native";
 import { router } from "expo-router";
 
 export default function Index() {
+  const [isDark, setIsDark] = useState(true);
+  
+  // Cores: Preto vs Branco
+  const theme = {
+    bg: isDark ? "rgba(15, 17, 17, 0.85)" : "rgba(255, 255, 255, 0.85)",
+    text: isDark ? "#ffffff" : "#0f1111",
+    secondaryBtn: isDark ? "rgba(255, 255, 255, 0.05)" : "#f0f0f0"
+  };
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: isDark ? "#0f1111" : "#ffffff" }}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <ImageBackground
-        // Sugestão: Uma imagem que remeta a condomínios ou conexão urbana
-        source={{
-          uri: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
-        }}
+        source={{ uri: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" }}
         style={styles.heroImage}
       >
-        <View style={styles.overlay}>
-          <Text style={styles.heroTag}>VIZZO CONDOMÍNIOS</Text>
+        <View style={[styles.overlay, { backgroundColor: theme.bg }]}>
           
-          <Text style={styles.heroTitle}>
+          <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDark(!isDark)}>
+            <Text style={[styles.themeToggleText, { color: theme.text }]}>
+              {isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.heroTag}>VIZZO CONDOMÍNIOS</Text>
+          <Text style={[styles.heroTitle, { color: theme.text }]}>
             Conectando você aos serviços do seu <Text style={styles.italicText}>vizinho</Text>.
           </Text>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.mainButton}
-              onPress={() => router.push("./Cadastro")}
-            >
+            <TouchableOpacity style={styles.mainButton} onPress={() => router.push("./Cadastro")}>
               <Text style={styles.mainButtonText}>CRIAR CONTA</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.secondaryButton}
+            <TouchableOpacity 
+              style={[styles.secondaryButton, { backgroundColor: theme.secondaryBtn }]} 
               onPress={() => router.push("./Login")}
             >
-              <Text style={styles.secondaryButtonText}>ACESSAR LOGIN</Text>
+              <Text style={[styles.secondaryButtonText, { color: theme.text }]}>ACESSAR LOGIN</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -49,71 +50,16 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#0f1111" 
-  },
-  heroImage: { 
-    flex: 1, 
-    width: "100%", 
-    height: "100%" 
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(15, 17, 17, 0.85)", // Escurecido para dar destaque ao texto
-    justifyContent: "center",
-    padding: "10%",
-  },
-  heroTag: {
-    color: "#ff8c00", // Laranja Vizzo
-    letterSpacing: 3,
-    fontSize: 12,
-    fontWeight: "700",
-    marginBottom: 15,
-  },
-  heroTitle: {
-    color: "white",
-    fontSize: 40,
-    fontWeight: "800",
-    lineHeight: 46,
-    marginBottom: 50,
-  },
-  italicText: {
-    fontStyle: "italic",
-    color: "#2d79f3", // Azul destaque
-  },
-  buttonContainer: {
-    gap: 15, // Espaçamento entre botões
-  },
-  mainButton: {
-    backgroundColor: "#2d79f3", // Azul Principal
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-    shadowColor: "#2d79f3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  mainButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    letterSpacing: 1.5,
-    fontSize: 13,
-  },
-  secondaryButton: {
-    borderWidth: 1.5,
-    borderColor: "#353838",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    letterSpacing: 1.5,
-    fontSize: 13,
-  },
+  heroImage: { flex: 1 },
+  overlay: { flex: 1, justifyContent: "center", padding: "10%" },
+  themeToggle: { position: 'absolute', top: 50, right: 20, padding: 10 },
+  themeToggleText: { fontSize: 12, fontWeight: 'bold' },
+  heroTag: { color: "#ff8c00", letterSpacing: 3, fontSize: 12, fontWeight: "700", marginBottom: 15 },
+  heroTitle: { fontSize: 40, fontWeight: "800", lineHeight: 46, marginBottom: 50 },
+  italicText: { fontStyle: "italic", color: "#2d79f3" },
+  buttonContainer: { gap: 15 },
+  mainButton: { backgroundColor: "#2d79f3", padding: 20, borderRadius: 12, alignItems: "center" },
+  mainButtonText: { color: "white", fontWeight: "bold", letterSpacing: 1.5, fontSize: 13 },
+  secondaryButton: { borderWidth: 1.5, borderColor: "#353838", padding: 20, borderRadius: 12, alignItems: "center" },
+  secondaryButtonText: { fontWeight: "bold", letterSpacing: 1.5, fontSize: 13 },
 });
