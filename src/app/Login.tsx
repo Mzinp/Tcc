@@ -1,82 +1,55 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  TextInput,
-} from "react-native";
-
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 
 export default function Login() {
-  const [currentScreen, setCurrentScreen] = useState("home");
+  const [isDark, setIsDark] = useState(true);
+
+  const theme = {
+    bg: isDark ? "#0f1111" : "#f5f5f5",
+    card: isDark ? "#1a1d1d" : "#ffffff",
+    input: isDark ? "#252828" : "#ffffff",
+    border: isDark ? "#353838" : "#dddddd",
+    text: isDark ? "#ffffff" : "#0f1111"
+  };
+
   return (
-    <View style={styles.containerDark}>
-      <View style={styles.centerContent}>
-        <View style={styles.loginForm}>
-          <Text>VISUALLINE.</Text>
-          <Text style={styles.loginTitle}>Login de Acesso</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="E-mail"
-            placeholderTextColor="#555"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Senha"
-            secureTextEntry
-            placeholderTextColor="#555"
-          />
-          <TouchableOpacity
-            style={styles.mainButton}
-            onPress={() => setCurrentScreen("vendas")}
-          >
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: theme.bg }}>
+      <ScrollView contentContainerStyle={styles.centerContent}>
+        <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDark(!isDark)}>
+          <Text style={{ color: "#2d79f3", fontWeight: 'bold' }}>{isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}</Text>
+        </TouchableOpacity>
+
+        <View style={[styles.loginForm, { backgroundColor: theme.card }]}>
+          <Text style={styles.brandTitle}>VIZZO</Text>
+          <Text style={[styles.loginTitle, { color: theme.text }]}>Login de Acesso</Text>
+
+          <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>E-MAIL</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
+            <TextInput style={{ color: theme.text }} placeholder="seu@email.com" placeholderTextColor="#8b8e98" />
+          </View>
+
+          <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>SENHA</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
+            <TextInput style={{ color: theme.text }} placeholder="••••••••" secureTextEntry placeholderTextColor="#8b8e98" />
+          </View>
+
+          <TouchableOpacity style={styles.mainButton}>
             <Text style={styles.mainButtonText}>ENTRAR</Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  containerDark: {
-    flex: 1,
-    backgroundColor: "#0f0f0f",
-  },
-  centerContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 25,
-  },
-  loginForm: {
-    backgroundColor: "#1a1a1a",
-    padding: 30,
-    borderTopWidth: 2,
-    borderTopColor: "#c5a47e",
-  },
-  loginTitle: {
-    color: "white",
-    fontSize: 22,
-    marginBottom: 30,
-  },
-  input: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    color: "white",
-    paddingVertical: 12,
-    marginBottom: 25,
-  },
-  mainButton: {
-    backgroundColor: "#c5a47e",
-    padding: 18,
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  mainButtonText: {
-    color: "#0f0f0f",
-    fontWeight: "bold",
-    letterSpacing: 2,
-    fontSize: 11,
-  },
+  centerContent: { flexGrow: 1, justifyContent: "center", padding: 25 },
+  themeToggle: { alignSelf: 'center', marginBottom: 20 },
+  loginForm: { padding: 35, borderRadius: 20, borderTopWidth: 6, borderTopColor: "#ff8c00", elevation: 10, shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 10 },
+  brandTitle: { color: "#ff8c00", fontSize: 14, fontWeight: "800", letterSpacing: 4, textAlign: "center", marginBottom: 5 },
+  loginTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 30, textAlign: "center" },
+  inputLabel: { fontSize: 12, fontWeight: "600", marginBottom: 8 },
+  inputContainer: { borderWidth: 1.5, borderRadius: 10, height: 55, paddingHorizontal: 15, justifyContent: "center", marginBottom: 20 },
+  mainButton: { backgroundColor: "#2d79f3", padding: 18, borderRadius: 10, alignItems: "center" },
+  mainButtonText: { color: "white", fontWeight: "bold" },
 });

@@ -1,100 +1,176 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  ScrollView,
-  TextInput,
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  KeyboardAvoidingView, 
+  ScrollView, 
+  TextInput, 
+  Platform, 
+  Image 
 } from "react-native";
-import Navegacao from "@/components/Navegacao";
 
 export default function Cadastro() {
-  const [currentScreen, setCurrentScreen] = useState("home");
+  const [isDark, setIsDark] = useState(true);
+
+  // Paleta de Cores: Dark vs Light
+  const theme = {
+    bg: isDark ? "#0f1111" : "#f5f5f5", // Fundo profundo vs Claro
+    inputBg: isDark ? "#1a1d1d" : "#ffffff", // Fundo do input
+    border: isDark ? "#353838" : "#dddddd",  // Borda suave
+    text: isDark ? "#ffffff" : "#0f1111",     // Texto principal
+    label: isDark ? "#e0e0e0" : "#444444"    // Label secundário
+  };
+
   return (
-    <KeyboardAvoidingView behavior="padding" style={styles.containerDark}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      style={{ flex: 1, backgroundColor: theme.bg }} // Fundo Dinâmico da Tela
+    >
       <ScrollView contentContainerStyle={styles.centerContent}>
-        <View style={styles.loginForm}>
-          <Text style={styles.loginTitle}>Novo Membro</Text>
-          <Text style={styles.inputLabel}>E-MAIL</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="executivo@email.com"
-            placeholderTextColor="#555"
+        
+        {/* Alternador de Tema (Pequeno no topo) */}
+        <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDark(!isDark)}>
+          <Text style={{ color: "#2d79f3", fontWeight: 'bold', fontSize: 12 }}>
+            {isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
+          </Text>
+        </TouchableOpacity>
+
+        {/* LOGO CENTRALIZADA NO EIXO DA TELA */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require("../assets/img/logo.png")} 
+            style={styles.logo}
+            resizeMode="contain"
           />
-          <Text style={styles.inputLabel}>CELULAR</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="+55 (11) 99999-9999"
-            placeholderTextColor="#555"
-          />
-          <TouchableOpacity style={styles.fotoBotao}>
-            <Text style={{ color: "#c5a47e", letterSpacing: 1 }}>
-              + ADICIONAR FOTO DE PERFIL
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.mainButton}
-            onPress={() => setCurrentScreen("login")}
-          >
-            <Text style={styles.mainButtonText}>SALVAR CADASTRO</Text>
-          </TouchableOpacity>
         </View>
+
+        {/* Título */}
+        <Text style={[styles.cadastroTitle, { color: theme.text }]}>Criar nova conta no Vizzo</Text>
+        
+        {/* NOME COMPLETO */}
+        <Text style={[styles.inputLabel, { color: theme.label }]}>NOME COMPLETO</Text>
+        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+          <TextInput 
+            style={{ color: theme.text }} 
+            placeholder="Digite seu nome" 
+            placeholderTextColor="#8b8e98" 
+          />
+        </View>
+
+        {/* CPF */}
+        <Text style={[styles.inputLabel, { color: theme.label }]}>CPF</Text>
+        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+          <TextInput 
+            style={{ color: theme.text }} 
+            placeholder="000.000.000-00" 
+            placeholderTextColor="#8b8e98"
+            keyboardType="numeric"
+          />
+        </View>
+
+        {/* E-MAIL */}
+        <Text style={[styles.inputLabel, { color: theme.label }]}>E-MAIL</Text>
+        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+          <TextInput 
+            style={{ color: theme.text }} 
+            placeholder="exemplo@email.com" 
+            placeholderTextColor="#8b8e98"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+
+        {/* TELEFONE */}
+        <Text style={[styles.inputLabel, { color: theme.label }]}>TELEFONE</Text>
+        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+          <TextInput 
+            style={{ color: theme.text }} 
+            placeholder="(11) 99999-9999" 
+            placeholderTextColor="#8b8e98"
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        {/* SENHA */}
+        <Text style={[styles.inputLabel, { color: theme.label }]}>SENHA</Text>
+        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+          <TextInput 
+            style={{ color: theme.text }} 
+            placeholder="••••••••" 
+            placeholderTextColor="#8b8e98"
+            secureTextEntry
+          />
+        </View>
+
+        {/* Botão Finalizar */}
+        <TouchableOpacity style={styles.mainButton}>
+          <Text style={styles.mainButtonText}>FINALIZAR CADASTRO</Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  containerDark: {
-    flex: 1,
-    backgroundColor: "#0f0f0f",
-  },
-  centerContent: {
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: 25,
-  },
-  loginForm: {
-    backgroundColor: "#1a1a1a",
+  centerContent: { 
+    flexGrow: 1, 
+    justifyContent: "center", // Garante centralização vertical
+    alignItems: "stretch",    // Preenche a largura
     padding: 30,
-    borderTopWidth: 2,
-    borderTopColor: "#c5a47e",
+    paddingVertical: 50
   },
-  loginTitle: { color: "white", fontSize: 22, marginBottom: 30 },
-  inputLabel: {
-    color: "#c5a47e",
-    fontSize: 10,
-    letterSpacing: 1,
+  themeToggle: { 
+    alignSelf: 'center', 
+    marginBottom: 20 
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 30, // Espaço após a logo
+    width: '100%',
+  },
+  logo: {
+    width: 200, // Ajuste para a logo aparecer bem no centro
+    height: 100,
+  },
+  cadastroTitle: { 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    marginBottom: 30, 
+    textAlign: 'center' 
+  },
+  inputLabel: { 
+    fontSize: 10, 
+    fontWeight: "700", 
     marginBottom: 8,
+    letterSpacing: 1.5,
   },
-  input: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-    color: "white",
-    paddingVertical: 12,
-    marginBottom: 25,
+  inputContainer: { 
+    borderWidth: 1.5, 
+    borderRadius: 12, // Arredondamento moderno (12px)
+    height: 55,       // Mais alto para facilitar o clique
+    paddingHorizontal: 15, 
+    justifyContent: 'center', 
+    marginBottom: 15 
   },
-  fotoBotao: {
-    height: 60,
-    borderStyle: "dashed",
-    borderWidth: 1,
-    borderColor: "#444",
-    justifyContent: "center",
+  mainButton: { 
+    backgroundColor: "#2d79f3", // Azul Vizzo
+    padding: 20, 
+    borderRadius: 12, 
     alignItems: "center",
-    marginBottom: 25,
+    marginTop: 20,
+    elevation: 5,
+    shadowColor: "#2d79f3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10
   },
-  mainButton: {
-    backgroundColor: "#c5a47e",
-    padding: 18,
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  mainButtonText: {
-    color: "#0f0f0f",
+  mainButtonText: { 
+    color: "white", 
     fontWeight: "bold",
-    letterSpacing: 2,
-    fontSize: 11,
+    fontSize: 14,
+    letterSpacing: 1
   },
 });
