@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
-export default function Navegacao() {
+export default function Navegacao():any {
   const [currentScreen, setCurrentScreen] = useState("home");
   const [menuAberto, setMenuAberto] = useState(false);
 

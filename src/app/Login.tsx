@@ -1,5 +1,12 @@
 import React, { useState } from "react";
+
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+
+import { router } from 'expo-router'
+
+import ButtonVoltar from '@/components/ButtonVoltar'
+
+
 
 export default function Login() {
   const [isDark, setIsDark] = useState(true);
@@ -22,6 +29,7 @@ export default function Login() {
         <View style={[styles.loginForm, { backgroundColor: theme.card }]}>
           <Text style={styles.brandTitle}>VIZZO</Text>
           <Text style={[styles.loginTitle, { color: theme.text }]}>Login de Acesso</Text>
+          
 
           <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>E-MAIL</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
@@ -33,7 +41,7 @@ export default function Login() {
             <TextInput style={{ color: theme.text }} placeholder="••••••••" secureTextEntry placeholderTextColor="#8b8e98" />
           </View>
 
-          <TouchableOpacity style={styles.mainButton}>
+          <TouchableOpacity style={styles.mainButton} onPress={() => {router.push("/home")}}>
             <Text style={styles.mainButtonText}>ENTRAR</Text>
           </TouchableOpacity>
         </View>

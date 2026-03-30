@@ -11,6 +11,8 @@ import {
   Image 
 } from "react-native";
 
+import ButtonVoltar from '@/components/ButtonVoltar';
+
 export default function Cadastro() {
   const [isDark, setIsDark] = useState(true);
 
@@ -37,10 +39,12 @@ export default function Cadastro() {
           </Text>
         </TouchableOpacity>
 
+        <ButtonVoltar cor={isDark ? "#ffffff" : "#0f1111"} />
+        
         {/* LOGO CENTRALIZADA NO EIXO DA TELA */}
         <View style={styles.logoContainer}>
           <Image 
-            source={require("../assets/img/logo.png")} 
+            source={require("../assets/img/vizzo.svg")} 
             style={styles.logo}
             resizeMode="contain"
           />
