@@ -11,7 +11,9 @@ import {
   Image 
 } from "react-native";
 
-import ButtonVoltar from '@/components/ButtonVoltar';
+import { router } from "expo-router";
+
+import ArrowVoltar from '@/components/ArrowVoltar';
 
 export default function Cadastro() {
   const [isDark, setIsDark] = useState(true);
@@ -39,7 +41,7 @@ export default function Cadastro() {
           </Text>
         </TouchableOpacity>
 
-        <ButtonVoltar cor={isDark ? "#ffffff" : "#0f1111"} />
+        <ArrowVoltar cor={isDark ? "#ffffff" : "#0f1111"} />
         
         {/* LOGO CENTRALIZADA NO EIXO DA TELA */}
         <View style={styles.logoContainer}>
@@ -109,7 +111,7 @@ export default function Cadastro() {
         </View>
 
         {/* Botão Finalizar */}
-        <TouchableOpacity style={styles.mainButton}>
+        <TouchableOpacity onPress={() => {router.push("/")}} style={styles.mainButton}>
           <Text style={styles.mainButtonText}>FINALIZAR CADASTRO</Text>
         </TouchableOpacity>
 

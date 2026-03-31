@@ -4,10 +4,6 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, ScrollView, Keyboa
 
 import { router } from 'expo-router'
 
-import ButtonVoltar from '@/components/ButtonVoltar'
-
-
-
 export default function Login() {
   const [isDark, setIsDark] = useState(true);
 
@@ -44,6 +40,11 @@ export default function Login() {
           <TouchableOpacity style={styles.mainButton} onPress={() => {router.push("/home")}}>
             <Text style={styles.mainButtonText}>ENTRAR</Text>
           </TouchableOpacity>
+          <View style={styles.esqueciView}>
+            <TouchableOpacity onPress={() => { router.push("/EsqueciSenha") }}>
+              <Text style={styles.mainButtonText}>Esqueceu a senha?</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -60,4 +61,6 @@ const styles = StyleSheet.create({
   inputContainer: { borderWidth: 1.5, borderRadius: 10, height: 55, paddingHorizontal: 15, justifyContent: "center", marginBottom: 20 },
   mainButton: { backgroundColor: "#2d79f3", padding: 18, borderRadius: 10, alignItems: "center" },
   mainButtonText: { color: "white", fontWeight: "bold" },
+  esquici: {color: "white"},
+  esqueciView: {padding: 10}
 });
