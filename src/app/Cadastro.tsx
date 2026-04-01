@@ -10,110 +10,76 @@ import {
   Platform, 
   Image 
 } from "react-native";
-
 import { router } from "expo-router";
-
-import ArrowVoltar from '@/components/ArrowVoltar';
+import BotaoVoltar from '@/components/ArrowVoltar';
 
 export default function Cadastro() {
   const [isDark, setIsDark] = useState(true);
 
-  // Paleta de Cores: Dark vs Light
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5", // Fundo profundo vs Claro
-    inputBg: isDark ? "#1a1d1d" : "#ffffff", // Fundo do input
-    border: isDark ? "#353838" : "#dddddd",  // Borda suave
-    text: isDark ? "#ffffff" : "#0f1111",     // Texto principal
-    label: isDark ? "#e0e0e0" : "#444444"    // Label secundário
+    bg: isDark ? "#0f1111" : "#f5f5f5",
+    inputBg: isDark ? "#1a1d1d" : "#ffffff",
+    border: isDark ? "#353838" : "#dddddd",
+    text: isDark ? "#ffffff" : "#0f1111",
+    label: isDark ? "#e0e0e0" : "#444444"
   };
 
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"} 
-      style={{ flex: 1, backgroundColor: theme.bg }} // Fundo Dinâmico da Tela
+      style={{ flex: 1, backgroundColor: theme.bg }}
     >
-      <ScrollView contentContainerStyle={styles.centerContent}>
+      <ScrollView contentContainerStyle={styles.centerContent} showsVerticalScrollIndicator={false}>
         
-        {/* Alternador de Tema (Pequeno no topo) */}
-        <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDark(!isDark)}>
-          <Text style={{ color: "#2d79f3", fontWeight: 'bold', fontSize: 12 }}>
-            {isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
-          </Text>
-        </TouchableOpacity>
+        {/* Controle de Tema centralizado */}
+        <View style={styles.themeContainer}>
+          <Text style={{ color: theme.label, fontSize: 10, fontWeight: 'bold' }}>PREFERÊNCIA DE TEMA</Text>
+          <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDark(!isDark)}>
+            <Text style={{ color: "#2d79f3", fontWeight: 'bold' }}>
+              {isDark ? "🌙 MODO ESCURO" : "☀️ MODO CLARO"}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <ArrowVoltar cor={isDark ? "#ffffff" : "#0f1111"} />
+        <BotaoVoltar cor={isDark ? "#ffffff" : "#0f1111"} />
         
-        {/* LOGO CENTRALIZADA NO EIXO DA TELA */}
         <View style={styles.logoContainer}>
+          {/* IMPORTANTE: Use .png e verifique se o nome na pasta é 'vizzo' ou 'logo' */}
           <Image 
-            source={require("../assets/img/vizzo.svg")} 
-            style={styles.logo}
-            resizeMode="contain"
+            source={require("../assets/img/logo.png")} 
+            style={styles.logo} 
+            resizeMode="contain" 
           />
         </View>
 
-        {/* Título */}
         <Text style={[styles.cadastroTitle, { color: theme.text }]}>Criar nova conta no Vizzo</Text>
         
-        {/* NOME COMPLETO */}
-        <Text style={[styles.inputLabel, { color: theme.label }]}>NOME COMPLETO</Text>
-        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
-          <TextInput 
-            style={{ color: theme.text }} 
-            placeholder="Digite seu nome" 
-            placeholderTextColor="#8b8e98" 
-          />
-        </View>
+        {/* Formulário */}
+        <View style={styles.form}>
+          <Text style={[styles.inputLabel, { color: theme.label }]}>NOME COMPLETO</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+            <TextInput placeholder="Digite seu nome" placeholderTextColor="#555" style={{ color: theme.text }} />
+          </View>
 
-        {/* CPF */}
-        <Text style={[styles.inputLabel, { color: theme.label }]}>CPF</Text>
-        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
-          <TextInput 
-            style={{ color: theme.text }} 
-            placeholder="000.000.000-00" 
-            placeholderTextColor="#8b8e98"
-            keyboardType="numeric"
-          />
-        </View>
+          <Text style={[styles.inputLabel, { color: theme.label }]}>CPF</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+            <TextInput placeholder="000.000.000-00" keyboardType="numeric" placeholderTextColor="#555" style={{ color: theme.text }} />
+          </View>
 
-        {/* E-MAIL */}
-        <Text style={[styles.inputLabel, { color: theme.label }]}>E-MAIL</Text>
-        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
-          <TextInput 
-            style={{ color: theme.text }} 
-            placeholder="exemplo@email.com" 
-            placeholderTextColor="#8b8e98"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
+          <Text style={[styles.inputLabel, { color: theme.label }]}>E-MAIL</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+            <TextInput placeholder="email@exemplo.com" autoCapitalize="none" placeholderTextColor="#555" style={{ color: theme.text }} />
+          </View>
 
-        {/* TELEFONE */}
-        <Text style={[styles.inputLabel, { color: theme.label }]}>TELEFONE</Text>
-        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
-          <TextInput 
-            style={{ color: theme.text }} 
-            placeholder="(11) 99999-9999" 
-            placeholderTextColor="#8b8e98"
-            keyboardType="phone-pad"
-          />
-        </View>
+          <Text style={[styles.inputLabel, { color: theme.label }]}>SENHA</Text>
+          <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+            <TextInput placeholder="••••••••" secureTextEntry placeholderTextColor="#555" style={{ color: theme.text }} />
+          </View>
 
-        {/* SENHA */}
-        <Text style={[styles.inputLabel, { color: theme.label }]}>SENHA</Text>
-        <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
-          <TextInput 
-            style={{ color: theme.text }} 
-            placeholder="••••••••" 
-            placeholderTextColor="#8b8e98"
-            secureTextEntry
-          />
+          <TouchableOpacity style={styles.mainButton} onPress={() => router.push("/")}>
+            <Text style={styles.mainButtonText}>FINALIZAR CADASTRO</Text>
+          </TouchableOpacity>
         </View>
-
-        {/* Botão Finalizar */}
-        <TouchableOpacity onPress={() => {router.push("/")}} style={styles.mainButton}>
-          <Text style={styles.mainButtonText}>FINALIZAR CADASTRO</Text>
-        </TouchableOpacity>
 
       </ScrollView>
     </KeyboardAvoidingView>
@@ -121,62 +87,15 @@ export default function Cadastro() {
 }
 
 const styles = StyleSheet.create({
-  centerContent: { 
-    flexGrow: 1, 
-    justifyContent: "center", // Garante centralização vertical
-    alignItems: "stretch",    // Preenche a largura
-    padding: 30,
-    paddingVertical: 50
-  },
-  themeToggle: { 
-    alignSelf: 'center', 
-    marginBottom: 20 
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 30, // Espaço após a logo
-    width: '100%',
-  },
-  logo: {
-    width: 200, // Ajuste para a logo aparecer bem no centro
-    height: 100,
-  },
-  cadastroTitle: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    marginBottom: 30, 
-    textAlign: 'center' 
-  },
-  inputLabel: { 
-    fontSize: 10, 
-    fontWeight: "700", 
-    marginBottom: 8,
-    letterSpacing: 1.5,
-  },
-  inputContainer: { 
-    borderWidth: 1.5, 
-    borderRadius: 12, // Arredondamento moderno (12px)
-    height: 55,       // Mais alto para facilitar o clique
-    paddingHorizontal: 15, 
-    justifyContent: 'center', 
-    marginBottom: 15 
-  },
-  mainButton: { 
-    backgroundColor: "#2d79f3", // Azul Vizzo
-    padding: 20, 
-    borderRadius: 12, 
-    alignItems: "center",
-    marginTop: 20,
-    elevation: 5,
-    shadowColor: "#2d79f3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10
-  },
-  mainButtonText: { 
-    color: "white", 
-    fontWeight: "bold",
-    fontSize: 14,
-    letterSpacing: 1
-  },
+  centerContent: { flexGrow: 1, padding: 30, paddingTop: 50 },
+  themeContainer: { alignItems: 'center', marginBottom: 20 },
+  themeToggle: { marginTop: 5, padding: 8, backgroundColor: 'rgba(45, 121, 243, 0.1)', borderRadius: 10 },
+  logoContainer: { alignItems: 'center', marginBottom: 20 },
+  logo: { width: 150, height: 80 },
+  cadastroTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
+  form: { width: '100%' },
+  inputLabel: { fontSize: 10, fontWeight: "700", marginBottom: 8, letterSpacing: 1 },
+  inputContainer: { borderWidth: 1.5, borderRadius: 12, height: 55, paddingHorizontal: 15, justifyContent: 'center', marginBottom: 15 },
+  mainButton: { backgroundColor: "#2d79f3", padding: 18, borderRadius: 12, alignItems: "center", marginTop: 20 },
+  mainButtonText: { color: "white", fontWeight: "bold", letterSpacing: 1 },
 });

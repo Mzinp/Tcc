@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router"; // Importante para a navegação
+import { router } from "expo-router"; 
 import Navegacao from "@/components/Navegacao";
 
 export default function Home() {
-  const [isDark, setIsDark] = useState(true);
+  // O tema aqui deve seguir a escolha feita no cadastro futuramente.
+  // Por enquanto, mantemos o padrão Dark do Vizzo.
+  const [isDark] = useState(true); 
+  
   const theme = {
     bg: isDark ? "#0f1111" : "#f5f5f5",
     card: isDark ? "#1a1d1d" : "#ffffff",
@@ -14,25 +17,26 @@ export default function Home() {
     border: isDark ? "#252828" : "#e0e0e0"
   };
 
-  // Lista de serviços com as rotas que criamos
   const SERVICOS_RAPIDOS = [
-    { name: "Reservas", icon: "calendar", color: "#ff8c00", route: "/reservas" },
-    { name: "Encomendas", icon: "cube", color: "#2d79f3", route: "/encomendas" },
-    { name: "Visitantes", icon: "people", color: "#4caf50", route: "/visitantes" },
-    { name: "Ocorrências", icon: "warning", color: "#f44336", route: "/ocorrencias" }
+    { name: "Reservas", icon: "calendar", color: "#ff8c00", route: "/Reservas" },
+    { name: "Encomendas", icon: "cube", color: "#2d79f3", route: "/Encomendas" },
+    { name: "Visitantes", icon: "people", color: "#4caf50", route: "/Visitantes" },
+    { name: "Ocorrências", icon: "warning", color: "#f44336", route: "/Ocorrencias" }
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* Header */}
+      {/* Header limpo sem o botão de sol/lua */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Olá, Gustavo Silva</Text>
+          <Text style={styles.greeting}>Olá, Morador</Text>
           <Text style={[styles.subGreeting, { color: theme.subtitle }]}>O que vamos resolver hoje?</Text>
         </View>
-        <TouchableOpacity onPress={() => setIsDark(!isDark)} style={styles.themeToggle}>
-          <Ionicons name={isDark ? "sunny" : "moon"} size={28} color="#ff8c00" />
-        </TouchableOpacity>
+        <Image 
+          source={require("../assets/img/logo.png")} 
+          style={{ width: 40, height: 40 }} 
+          resizeMode="contain" 
+        />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -45,7 +49,7 @@ export default function Home() {
               <Text style={styles.cardButtonText}>Confirmar Presença</Text>
             </TouchableOpacity>
           </View>
-          <Image source={require("../assets/img/logo.png")} style={styles.miniLogo} resizeMode="contain" />
+          <Ionicons name="notifications" size={50} color="rgba(255,255,255,0.3)" />
         </View>
 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Serviços Rápidos</Text>
@@ -56,7 +60,7 @@ export default function Home() {
             <TouchableOpacity 
               key={index} 
               activeOpacity={0.8}
-              onPress={() => router.push(item.route as any)} // Navegação aqui!
+              onPress={() => router.push(item.route as any)}
               style={[
                 styles.gridItem, 
                 { backgroundColor: theme.card, borderColor: theme.border, borderWidth: isDark ? 1 : 0 }
@@ -70,7 +74,6 @@ export default function Home() {
           ))}
         </View>
 
-        {/* Espaço extra para não cobrir o último item com a Navegação fixa se houver */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -90,10 +93,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center' 
   },
-  themeToggle: {
-    padding: 8,
-    borderRadius: 12,
-  },
   greeting: { fontSize: 24, fontWeight: 'bold', color: '#2d79f3' },
   subGreeting: { fontSize: 14 },
   content: { padding: 25 },
@@ -102,6 +101,7 @@ const styles = StyleSheet.create({
     borderRadius: 25, 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
+    alignItems: 'center',
     marginBottom: 35,
     elevation: 8,
     shadowColor: "#2d79f3",
@@ -120,7 +120,6 @@ const styles = StyleSheet.create({
     marginTop: 5
   },
   cardButtonText: { color: '#2d79f3', fontWeight: 'bold', fontSize: 13 },
-  miniLogo: { width: 70, height: 70, opacity: 0.3, alignSelf: 'center' },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, letterSpacing: 0.5 },
   grid: { 
     flexDirection: 'row', 
