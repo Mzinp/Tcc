@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -11,10 +11,21 @@ import {
   Image 
 } from "react-native";
 import { router } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Importante instalar: npx expo install @react-native-async-storage/async-storage
 import BotaoVoltar from '@/components/ArrowVoltar';
 
 export default function Cadastro() {
   const [isDark, setIsDark] = useState(true);
+
+  // Função para salvar o tema
+  const salvarTema = async (valor: boolean) => {
+    try {
+      setIsDark(valor);
+      await AsyncStorage.setItem('@vizzo_theme', valor ? 'dark' : 'light');
+    } catch (e) {
+      console.log("Erro ao salvar tema");
+    }
+  };
 
   const theme = {
     bg: isDark ? "#0f1111" : "#f5f5f5",
@@ -31,10 +42,12 @@ export default function Cadastro() {
     >
       <ScrollView contentContainerStyle={styles.centerContent} showsVerticalScrollIndicator={false}>
         
-        {/* Controle de Tema centralizado */}
         <View style={styles.themeContainer}>
           <Text style={{ color: theme.label, fontSize: 10, fontWeight: 'bold' }}>PREFERÊNCIA DE TEMA</Text>
-          <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDark(!isDark)}>
+          <TouchableOpacity 
+            style={styles.themeToggle} 
+            onPress={() => salvarTema(!isDark)}
+          >
             <Text style={{ color: "#2d79f3", fontWeight: 'bold' }}>
               {isDark ? "🌙 MODO ESCURO" : "☀️ MODO CLARO"}
             </Text>
@@ -44,7 +57,6 @@ export default function Cadastro() {
         <BotaoVoltar cor={isDark ? "#ffffff" : "#0f1111"} />
         
         <View style={styles.logoContainer}>
-          {/* IMPORTANTE: Use .png e verifique se o nome na pasta é 'vizzo' ou 'logo' */}
           <Image 
             source={require("../assets/img/logo.png")} 
             style={styles.logo} 
@@ -54,7 +66,6 @@ export default function Cadastro() {
 
         <Text style={[styles.cadastroTitle, { color: theme.text }]}>Criar nova conta no Vizzo</Text>
         
-        {/* Formulário */}
         <View style={styles.form}>
           <Text style={[styles.inputLabel, { color: theme.label }]}>NOME COMPLETO</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
@@ -76,7 +87,7 @@ export default function Cadastro() {
             <TextInput placeholder="••••••••" secureTextEntry placeholderTextColor="#555" style={{ color: theme.text }} />
           </View>
 
-          <TouchableOpacity style={styles.mainButton} onPress={() => router.push("/")}>
+          <TouchableOpacity style={styles.mainButton} onPress={() => router.push("/Login")}>
             <Text style={styles.mainButtonText}>FINALIZAR CADASTRO</Text>
           </TouchableOpacity>
         </View>

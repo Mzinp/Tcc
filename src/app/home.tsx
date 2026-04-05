@@ -1,14 +1,28 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router"; 
 import Navegacao from "@/components/Navegacao";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useFocusEffect } from "expo-router";
+import React, { useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function Home() {
-  // O tema aqui deve seguir a escolha feita no cadastro futuramente.
-  // Por enquanto, mantemos o padrão Dark do Vizzo.
-  const [isDark] = useState(true); 
+  const [isDark, setIsDark] = useState(true); 
   
+  // Carrega a preferência de tema do armazenamento local
+  useFocusEffect(
+    React.useCallback(() => {
+      const carregarTema = async () => {
+        try {
+          const salvo = await AsyncStorage.getItem('@vizzo_theme');
+          if (salvo !== null) setIsDark(salvo === 'dark');
+        } catch (e) {
+          console.log("Erro ao carregar tema na Home");
+        }
+      };
+      carregarTema();
+    }, [])
+  );
+
   const theme = {
     bg: isDark ? "#0f1111" : "#f5f5f5",
     card: isDark ? "#1a1d1d" : "#ffffff",
@@ -26,7 +40,6 @@ export default function Home() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* Header limpo sem o botão de sol/lua */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Olá, Morador</Text>
@@ -40,12 +53,19 @@ export default function Home() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Card de Destaque: Mural de Avisos */}
+        {/* Card de Destaque atualizado para usar a tela de Sucesso */}
         <View style={[styles.mainCard, { backgroundColor: "#2d79f3" }]}>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle}>Assembleia Geral</Text>
             <Text style={styles.cardDesc}>Hoje às 19:00 no Salão de Festas</Text>
-            <TouchableOpacity activeOpacity={0.7} style={styles.cardButton}>
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={styles.cardButton}
+              onPress={() => router.push({
+                pathname: "/Sucesso",
+                params: { mensagem: "Presença confirmada na Assembleia!" }
+              })}
+            >
               <Text style={styles.cardButtonText}>Confirmar Presença</Text>
             </TouchableOpacity>
           </View>
@@ -54,7 +74,6 @@ export default function Home() {
 
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Serviços Rápidos</Text>
         
-        {/* Grid de Ações */}
         <View style={styles.grid}>
           {SERVICOS_RAPIDOS.map((item, index) => (
             <TouchableOpacity 
@@ -63,7 +82,7 @@ export default function Home() {
               onPress={() => router.push(item.route as any)}
               style={[
                 styles.gridItem, 
-                { backgroundColor: theme.card, borderColor: theme.border, borderWidth: isDark ? 1 : 0 }
+                { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }
               ]}
             >
               <View style={styles.iconCircle}>
@@ -77,7 +96,6 @@ export default function Home() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Navegação fixa no rodapé */}
       <Navegacao />
     </View>
   );

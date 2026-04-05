@@ -1,28 +1,43 @@
+import BotaoVoltar from '@/components/ArrowVoltar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  TextInput, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform 
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
-import ArrowVoltar from '@/components/ArrowVoltar'; // Importação solicitada
-import { router } from 'expo-router';
 
 export default function EsqueceuSenha() {
   const [isDark, setIsDark] = useState(true);
 
-  // Tema: Preto vs Branco conforme as imagens anteriores
+  // Carrega o tema definido no Cadastro
+  useFocusEffect(
+    React.useCallback(() => {
+      const carregarTema = async () => {
+        try {
+          const salvo = await AsyncStorage.getItem('@vizzo_theme');
+          if (salvo !== null) setIsDark(salvo === 'dark');
+        } catch (e) {
+          console.log("Erro ao carregar tema");
+        }
+      };
+      carregarTema();
+    }, [])
+  );
+
   const theme = {
     bg: isDark ? "#0f1111" : "#f5f5f5",
     card: isDark ? "#1a1d1d" : "#ffffff",
-    input: isDark ? "#252828" : "#ffffff",
+    input: isDark ? "#252828" : "#f0f0f0",
     border: isDark ? "#353838" : "#dddddd",
     text: isDark ? "#ffffff" : "#0f1111",
-    label: isDark ? "#e0e0e0" : "#444444"
+    label: isDark ? "#e0e0e0" : "#666666"
   };
 
   return (
@@ -30,29 +45,19 @@ export default function EsqueceuSenha() {
       behavior={Platform.OS === "ios" ? "padding" : "height"} 
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
-      {/* Header com o Botão de Voltar e Alternador de Tema */}
+      {/* Header limpo, apenas com o botão de voltar */}
       <View style={styles.header}>
-        <ArrowVoltar cor={theme.text} />
-        
-        <TouchableOpacity 
-          style={styles.themeBtn} 
-          onPress={() => setIsDark(!isDark)}
-        >
-          <Text style={{ color: "#2d79f3", fontWeight: 'bold' }}>
-            {isDark ? "☀️" : "🌙"}
-          </Text>
-        </TouchableOpacity>
+        <BotaoVoltar cor={theme.text} />
       </View>
 
       <ScrollView contentContainerStyle={styles.centerContent}>
-        <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <Text style={[styles.title, { color: theme.text }]}>Recuperar Senha</Text>
           
           <Text style={[styles.description, { color: theme.label }]}>
             Digite seu e-mail cadastrado no Vizzo. Enviaremos um código para você criar uma nova senha.
           </Text>
 
-          {/* Campo de E-mail */}
           <Text style={[styles.inputLabel, { color: theme.label }]}>E-MAIL</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
             <TextInput 
@@ -64,13 +69,12 @@ export default function EsqueceuSenha() {
             />
           </View>
 
-          {/* Botão de Enviar */}
           <TouchableOpacity 
             style={styles.mainButton}
-            onPress={() => {
-              console.log("Código enviado");
-              router.back(); // Retorna após simular o envio
-            }}
+            onPress={() => router.push({
+              pathname: "/Sucesso",
+              params: { mensagem: "Verifique seu e-mail! Enviamos as instruções de recuperação." }
+            })}
           >
             <Text style={styles.mainButtonText}>ENVIAR CÓDIGO</Text>
           </TouchableOpacity>
@@ -82,14 +86,8 @@ export default function EsqueceuSenha() {
 
 const styles = StyleSheet.create({
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingRight: 25,
-    // ArrowVoltar já possui padding/margin interno conforme criado anteriormente
-  },
-  themeBtn: {
-    marginTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingHorizontal: 10,
   },
   centerContent: {
     flexGrow: 1,
@@ -100,7 +98,8 @@ const styles = StyleSheet.create({
     padding: 35,
     borderRadius: 20,
     borderTopWidth: 6,
-    borderTopColor: "#ff8c00", // Laranja Vizzo
+    borderTopColor: "#ff8c00",
+    borderWidth: 1,
     elevation: 10,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -133,7 +132,7 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   mainButton: {
-    backgroundColor: "#2d79f3", // Azul Vizzo
+    backgroundColor: "#2d79f3",
     padding: 18,
     borderRadius: 12,
     alignItems: "center",
