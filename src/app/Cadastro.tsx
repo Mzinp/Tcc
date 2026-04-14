@@ -10,12 +10,13 @@ import {
   Platform, 
   Image 
 } from "react-native";
-import { router } from "expo-router";
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Importante instalar: npx expo install @react-native-async-storage/async-storage
+import { router, useLocalSearchParams } from "expo-router"; // Importado useLocalSearchParams
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import BotaoVoltar from '@/components/ArrowVoltar';
 
 export default function Cadastro() {
   const [isDark, setIsDark] = useState(true);
+  const params = useLocalSearchParams(); // Pega o nome do condomínio vindo da busca
 
   // Função para salvar o tema
   const salvarTema = async (valor: boolean) => {
@@ -67,6 +68,22 @@ export default function Cadastro() {
         <Text style={[styles.cadastroTitle, { color: theme.text }]}>Criar nova conta no Vizzo</Text>
         
         <View style={styles.form}>
+          {/* CAMPO DE CONDOMÍNIO ADICIONADO AQUI */}
+          <Text style={[styles.inputLabel, { color: theme.label }]}>MEU CONDOMÍNIO</Text>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={() => router.push("/LocalizarCondominio")}
+            style={[styles.inputContainer, { 
+              backgroundColor: theme.inputBg, 
+              borderColor: params.condonome ? "#2d79f3" : theme.border,
+              borderStyle: params.condonome ? 'solid' : 'dashed' 
+            }]}
+          >
+            <Text style={{ color: params.condonome ? theme.text : "#555" }}>
+              {params.condonome || "Clique para selecionar seu condomínio"}
+            </Text>
+          </TouchableOpacity>
+
           <Text style={[styles.inputLabel, { color: theme.label }]}>NOME COMPLETO</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
             <TextInput placeholder="Digite seu nome" placeholderTextColor="#555" style={{ color: theme.text }} />
@@ -80,6 +97,21 @@ export default function Cadastro() {
           <Text style={[styles.inputLabel, { color: theme.label }]}>E-MAIL</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
             <TextInput placeholder="email@exemplo.com" autoCapitalize="none" placeholderTextColor="#555" style={{ color: theme.text }} />
+          </View>
+
+          <View style={styles.row}>
+             <View style={{ flex: 1, marginRight: 10 }}>
+                <Text style={[styles.inputLabel, { color: theme.label }]}>BLOCO</Text>
+                <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+                    <TextInput placeholder="Ex: A" placeholderTextColor="#555" style={{ color: theme.text }} />
+                </View>
+             </View>
+             <View style={{ flex: 1 }}>
+                <Text style={[styles.inputLabel, { color: theme.label }]}>APTO</Text>
+                <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
+                    <TextInput placeholder="102" keyboardType="numeric" placeholderTextColor="#555" style={{ color: theme.text }} />
+                </View>
+             </View>
           </View>
 
           <Text style={[styles.inputLabel, { color: theme.label }]}>SENHA</Text>
@@ -105,6 +137,7 @@ const styles = StyleSheet.create({
   logo: { width: 150, height: 80 },
   cadastroTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
   form: { width: '100%' },
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
   inputLabel: { fontSize: 10, fontWeight: "700", marginBottom: 8, letterSpacing: 1 },
   inputContainer: { borderWidth: 1.5, borderRadius: 12, height: 55, paddingHorizontal: 15, justifyContent: 'center', marginBottom: 15 },
   mainButton: { backgroundColor: "#2d79f3", padding: 18, borderRadius: 12, alignItems: "center", marginTop: 20 },
