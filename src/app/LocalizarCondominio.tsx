@@ -1,69 +1,70 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, router } from 'expo-router';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import BotaoVoltar from "@/components/ArrowVoltar";
+
+// Dados simulados para o seu TCC
+const CONDOMINIOS = [
+  { id: '1', nome: 'Residencial Solar das Flores', cidade: 'São Paulo, SP', endereco: 'Rua das Palmeiras, 120', imagem: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=100&q=80' },
+  { id: '2', nome: 'Edifício Horizonte Azul', cidade: 'Santo André, SP', endereco: 'Av. Portugal, 450', imagem: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=100&q=80' },
+  { id: '3', nome: 'Vila Real Premium', cidade: 'São Bernardo, SP', endereco: 'Rua Jurubatuba, 88', imagem: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=100&q=80' },
+  { id: '4', nome: 'Condomínio Parque das Águas', cidade: 'São Caetano, SP', endereco: 'Rua Goiás, 300', imagem: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=100&q=80' },
+];
 
 export default function LocalizarCondominio() {
   const [isDark, setIsDark] = useState(true);
-  const [busca, setBusca] = useState("");
-
-  // Simulação de condomínios cadastrados no sistema
-  const condominios = [
-    { id: '1', nome: 'Residencial Sapopemba', endereco: 'Av. Sapopemba, 1200' },
-    { id: '2', nome: 'Condomínio Vizzo Park', endereco: 'Rua das Flores, 450' },
-    { id: '3', nome: 'Edifício Etec Center', endereco: 'Av. Paulista, 1000' },
-    { id: '4', nome: 'Solar das Palmeiras', endereco: 'Rua Belém, 89' },
-  ];
-
+  const [busca, setBusca] = useState('');
+  
   // Filtra a lista conforme o usuário digita
-  const listaFiltrada = condominios.filter(c => 
-    c.nome.toLowerCase().includes(busca.toLowerCase())
+  const listaFiltrada = CONDOMINIOS.filter(c => 
+    c.nome.toLowerCase().includes(busca.toLowerCase()) || 
+    c.cidade.toLowerCase().includes(busca.toLowerCase())
   );
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const carregarTema = async () => {
-        const salvo = await AsyncStorage.getItem('@vizzo_theme');
-        if (salvo !== null) setIsDark(salvo === 'dark');
-      };
-      carregarTema();
-    }, [])
-  );
+  useEffect(() => {
+    const carregarTema = async () => {
+      const salvo = await AsyncStorage.getItem('@vizzo_theme');
+      if (salvo !== null) setIsDark(salvo === 'dark');
+    };
+    carregarTema();
+  }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
+    bg: isDark ? "#0f1111" : "#ffffff",
+    card: isDark ? "#1a1d1d" : "#f9f9f9",
     text: isDark ? "#ffffff" : "#0f1111",
-    card: isDark ? "#1a1d1d" : "#ffffff",
-    input: isDark ? "#1a1d1d" : "#ffffff",
-    border: isDark ? "#353838" : "#dddddd",
-    subtitle: isDark ? "#8b8e98" : "#666666",
+    subText: isDark ? "#8b8e98" : "#666666",
+    input: isDark ? "#252828" : "#f0f0f0",
+    border: isDark ? "#252828" : "#eeeeee"
   };
 
-  return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={[styles.container, { backgroundColor: theme.bg }]}
-    >
-      <BotaoVoltar cor={theme.text} />
+const selecionarCondominio = (nome: string) => {
+  router.push({
+    pathname: "/Cadastro",
+    params: { condonome: nome }
+  });
+};
 
+  return (
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Encontrar Condomínio</Text>
-        <Text style={[styles.subtitle, { color: theme.subtitle }]}>
-          Digite o nome ou endereço do seu prédio
-        </Text>
+        <BotaoVoltar cor={theme.text} />
+        <Text style={[styles.title, { color: theme.text }]}>Localizar Condomínio</Text>
       </View>
 
-      <View style={styles.searchSection}>
-        <Ionicons name="search" size={20} color="#2d79f3" style={styles.searchIcon} />
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.input, color: theme.text, borderColor: theme.border }]}
-          placeholder="Buscar condomínio..."
-          placeholderTextColor="#555"
-          value={busca}
-          onChangeText={setBusca}
-        />
+      <View style={styles.searchContainer}>
+        <View style={[styles.searchBar, { backgroundColor: theme.input }]}>
+          <Ionicons name="search" size={20} color={theme.subText} />
+          <TextInput 
+            style={[styles.input, { color: theme.text }]}
+            placeholder="Nome ou cidade do condomínio..."
+            placeholderTextColor={theme.subText}
+            value={busca}
+            onChangeText={setBusca}
+          />
+        </View>
       </View>
 
       <FlatList
@@ -72,71 +73,56 @@ export default function LocalizarCondominio() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <TouchableOpacity 
-            style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
-            onPress={() => router.push({
-                pathname: "/Cadastro", // Ou para a tela de login/vincular
-                params: { condonome: item.nome }
-            })}
+            style={[styles.condoCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onPress={() => selecionarCondominio(item.nome)}
           >
-            <View style={styles.iconCircle}>
-              <Ionicons name="business" size={24} color="white" />
-            </View>
-            <View style={styles.info}>
+            <Image source={{ uri: item.imagem }} style={styles.condoImage} />
+            <View style={styles.condoInfo}>
               <Text style={[styles.condoName, { color: theme.text }]}>{item.nome}</Text>
-              <Text style={[styles.condoAddress, { color: theme.subtitle }]}>{item.endereco}</Text>
+              <Text style={[styles.condoCity, { color: "#2d79f3" }]}>{item.cidade}</Text>
+              <Text style={[styles.condoAddr, { color: theme.subText }]}>{item.endereco}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#2d79f3" />
+            <Ionicons name="chevron-forward" size={20} color={theme.subText} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>Nenhum condomínio encontrado.</Text>
+          <View style={styles.empty}>
+            <Ionicons name="business-outline" size={60} color={theme.border} />
+            <Text style={[styles.emptyText, { color: theme.subText }]}>Nenhum condomínio encontrado.</Text>
+          </View>
         }
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 25, marginTop: 10 },
-  title: { fontSize: 26, fontWeight: 'bold' },
-  subtitle: { fontSize: 14, marginTop: 5 },
-  searchSection: { 
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 60, paddingHorizontal: 15 },
+  title: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
+  searchContainer: { padding: 25 },
+  searchBar: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingHorizontal: 25, 
-    marginTop: 25 
-  },
-  searchIcon: { position: 'absolute', left: 40, zIndex: 1 },
-  input: { 
-    flex: 1, 
-    height: 55, 
+    paddingHorizontal: 15, 
     borderRadius: 15, 
-    paddingLeft: 45, 
-    paddingRight: 15, 
-    borderWidth: 1 
+    height: 55 
   },
-  list: { padding: 25 },
-  card: { 
+  input: { flex: 1, marginLeft: 10, fontSize: 15 },
+  list: { paddingHorizontal: 25, paddingBottom: 50 },
+  condoCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     padding: 15, 
-    borderRadius: 18, 
-    marginBottom: 12, 
-    borderWidth: 1,
-    elevation: 2 
+    borderRadius: 20, 
+    marginBottom: 15, 
+    borderWidth: 1 
   },
-  iconCircle: { 
-    width: 45, 
-    height: 45, 
-    borderRadius: 22.5, 
-    backgroundColor: '#2d79f3', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginRight: 15 
-  },
-  info: { flex: 1 },
+  condoImage: { width: 60, height: 60, borderRadius: 12 },
+  condoInfo: { flex: 1, marginLeft: 15 },
   condoName: { fontSize: 16, fontWeight: 'bold' },
-  condoAddress: { fontSize: 12, marginTop: 2 },
-  emptyText: { textAlign: 'center', color: '#8b8e98', marginTop: 20 }
+  condoCity: { fontSize: 12, fontWeight: 'bold', marginVertical: 2 },
+  condoAddr: { fontSize: 11 },
+  empty: { alignItems: 'center', marginTop: 50 },
+  emptyText: { marginTop: 15, fontSize: 14 }
 });

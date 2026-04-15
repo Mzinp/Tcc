@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function Index() {
   const [isDark, setIsDark] = useState(true);
 
-  // Carrega a preferência caso o usuário já tenha aberto o app antes
+  // Carrega a preferência de tema silenciosamente
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
@@ -16,13 +16,6 @@ export default function Index() {
       carregarTema();
     }, [])
   );
-
-  // Função que muda o tema e já salva na memória do celular
-  const alternarTema = async () => {
-    const novoTema = !isDark;
-    setIsDark(novoTema);
-    await AsyncStorage.setItem('@vizzo_theme', novoTema ? 'dark' : 'light');
-  };
   
   const theme = {
     bg: isDark ? "rgba(15, 17, 17, 0.85)" : "rgba(255, 255, 255, 0.92)",
@@ -40,12 +33,7 @@ export default function Index() {
       >
         <View style={[styles.overlay, { backgroundColor: theme.bg }]}>
           
-          {/* O único lugar além do cadastro onde permitimos a troca, para definir o início */}
-          <TouchableOpacity style={styles.themeToggle} onPress={alternarTema}>
-            <Text style={[styles.themeToggleText, { color: theme.text }]}>
-              {isDark ? "☀️ MODO CLARO" : "🌙 MODO ESCURO"}
-            </Text>
-          </TouchableOpacity>
+          {/* Botão de tema removido daqui para migrar para as Configurações */}
 
           <Text style={styles.heroTag}>VIZZO CONDOMÍNIOS</Text>
           <Text style={[styles.heroTitle, { color: theme.text }]}>
@@ -76,16 +64,6 @@ export default function Index() {
 const styles = StyleSheet.create({
   heroImage: { flex: 1 },
   overlay: { flex: 1, justifyContent: "center", padding: "10%" },
-  themeToggle: { 
-    position: 'absolute', 
-    top: 60, 
-    right: 25, 
-    paddingVertical: 8, 
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: 'rgba(45, 121, 243, 0.1)'
-  },
-  themeToggleText: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
   heroTag: { color: "#ff8c00", letterSpacing: 3, fontSize: 12, fontWeight: "700", marginBottom: 15 },
   heroTitle: { fontSize: 40, fontWeight: "800", lineHeight: 46, marginBottom: 50 },
   italicText: { fontStyle: "italic", color: "#2d79f3" },

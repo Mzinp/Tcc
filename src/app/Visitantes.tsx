@@ -1,13 +1,27 @@
-import BotaoVoltar from '@/components/ArrowVoltar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  ScrollView, 
+  FlatList 
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BotaoVoltar from '@/components/ArrowVoltar';
 
 export default function Visitantes() {
   const [isDark, setIsDark] = useState(true);
 
-  // Sincroniza o tema com o AsyncStorage
+  // Mock de histórico para dar corpo à tela
+  const historico = [
+    { id: '1', nome: 'Ana Souza', data: 'Ontem', tipo: 'Familiar' },
+    { id: '2', nome: 'Marcos Uber', data: '12/04', tipo: 'Serviço' },
+  ];
+
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
@@ -15,7 +29,7 @@ export default function Visitantes() {
           const salvo = await AsyncStorage.getItem('@vizzo_theme');
           if (salvo !== null) setIsDark(salvo === 'dark');
         } catch (e) {
-          console.log("Erro ao carregar tema em Visitantes");
+          console.log("Erro ao carregar tema");
         }
       };
       carregarTema();
@@ -23,48 +37,98 @@ export default function Visitantes() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
+    bg: isDark ? "#0f1111" : "#ffffff", // Branco Puro
+    card: isDark ? "#1a1d1d" : "#f9f9f9",
     text: isDark ? "#ffffff" : "#0f1111",
-    subtitle: isDark ? "#8b8e98" : "#666666",
-    input: isDark ? "#1a1d1d" : "#ffffff",
-    border: isDark ? "#353838" : "#dddddd",
+    subText: isDark ? "#8b8e98" : "#666666",
+    input: isDark ? "#1a1d1d" : "#f0f0f0",
+    border: isDark ? "#252828" : "#eeeeee",
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <BotaoVoltar cor={theme.text} />
-      
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Liberar Visitante</Text>
-        <Text style={[styles.subtitle, { color: theme.subtitle }]}>Avise a portaria sobre sua visita</Text>
+      <View style={styles.topHeader}>
+        <BotaoVoltar cor={theme.text} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.label}>NOME DO VISITANTE</Text>
-        <TextInput 
-          style={[styles.input, { backgroundColor: theme.input, color: theme.text, borderColor: theme.border }]} 
-          placeholder="Nome completo" 
-          placeholderTextColor="#555" 
-        />
-        
-        <Text style={styles.label}>DOCUMENTO (RG/CPF)</Text>
-        <TextInput 
-          style={[styles.input, { backgroundColor: theme.input, color: theme.text, borderColor: theme.border }]} 
-          placeholder="000.000.000-00" 
-          placeholderTextColor="#555" 
-          keyboardType="numeric" 
-        />
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>Visitantes</Text>
+          <Text style={[styles.subtitle, { color: theme.subText }]}>Gerencie e autorize acessos à sua unidade</Text>
+        </View>
 
-        <TouchableOpacity 
-          style={styles.mainButton}
-          activeOpacity={0.8}
-          onPress={() => router.push({ 
-            pathname: "/Sucesso", 
-            params: { mensagem: "A portaria foi notificada e a entrada está autorizada!" } 
-          })}
-        >
-          <Text style={styles.buttonText}>AUTORIZAR ENTRADA</Text>
-        </TouchableOpacity>
+        {/* CARD DE NOVA AUTORIZAÇÃO */}
+        <View style={[styles.formCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="person-add-outline" size={20} color="#2d79f3" />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Nova Autorização</Text>
+          </View>
+
+          <Text style={styles.label}>NOME DO VISITANTE</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.input, borderColor: theme.border }]}>
+            <TextInput 
+              style={[styles.input, { color: theme.text }]} 
+              placeholder="Ex: João Silva" 
+              placeholderTextColor={theme.subText} 
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={{ flex: 1.5, marginRight: 10 }}>
+              <Text style={styles.label}>CPF / RG</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.input, borderColor: theme.border }]}>
+                <TextInput 
+                  style={[styles.input, { color: theme.text }]} 
+                  placeholder="000.000.000-00" 
+                  keyboardType="numeric"
+                  placeholderTextColor={theme.subText} 
+                />
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>DATA</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.input, borderColor: theme.border }]}>
+                <TextInput 
+                  style={[styles.input, { color: theme.text }]} 
+                  placeholder="Hoje" 
+                  placeholderTextColor={theme.subText} 
+                />
+              </View>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.mainButton}
+            onPress={() => router.push({ 
+              pathname: "/Sucesso", 
+              params: { mensagem: "A portaria recebeu a autorização!" } 
+            })}
+          >
+            <Ionicons name="shield-checkmark" size={18} color="white" />
+            <Text style={styles.buttonText}>LIBERAR ACESSO</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* HISTÓRICO RECENTE */}
+        <View style={styles.historySection}>
+          <Text style={[styles.historyTitle, { color: theme.text }]}>Recentes</Text>
+          {historico.map((item) => (
+            <TouchableOpacity 
+                key={item.id} 
+                style={[styles.historyCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            >
+              <View style={styles.historyAvatar}>
+                <Ionicons name="person" size={20} color="#2d79f3" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 15 }}>
+                <Text style={[styles.historyName, { color: theme.text }]}>{item.nome}</Text>
+                <Text style={[styles.historyMeta, { color: theme.subText }]}>{item.tipo} • {item.data}</Text>
+              </View>
+              <Ionicons name="repeat-outline" size={20} color="#2d79f3" />
+            </TouchableOpacity>
+          ))}
+        </View>
+
       </ScrollView>
     </View>
   );
@@ -72,27 +136,52 @@ export default function Visitantes() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 25, marginTop: 10 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 14, marginTop: 4 },
-  content: { padding: 25 },
-  label: { color: '#ff8c00', fontSize: 10, fontWeight: 'bold', marginBottom: 8, letterSpacing: 1 },
-  input: { 
-    borderRadius: 12, 
-    padding: 15, 
-    marginBottom: 20, 
-    borderWidth: 1, 
-  },
-  mainButton: { 
-    backgroundColor: '#2d79f3', 
-    padding: 18, 
-    borderRadius: 12, 
-    alignItems: 'center', 
-    marginTop: 10,
+  topHeader: { paddingTop: 60, paddingHorizontal: 15 },
+  scrollContent: { paddingBottom: 50 },
+  header: { paddingHorizontal: 25, marginVertical: 20 },
+  title: { fontSize: 30, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, marginTop: 5 },
+  
+  formCard: { 
+    marginHorizontal: 20, 
+    padding: 20, 
+    borderRadius: 25, 
+    borderWidth: 1,
     elevation: 4,
     shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10
   },
-  buttonText: { color: 'white', fontWeight: 'bold', letterSpacing: 1 }
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
+  
+  label: { color: '#2d79f3', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  inputWrapper: { borderRadius: 12, borderWidth: 1, height: 50, paddingHorizontal: 15, justifyContent: 'center', marginBottom: 15 },
+  input: { flex: 1, fontSize: 14 },
+  row: { flexDirection: 'row' },
+
+  mainButton: { 
+    backgroundColor: '#2d79f3', 
+    padding: 16, 
+    borderRadius: 15, 
+    flexDirection: 'row',
+    alignItems: 'center', 
+    justifyContent: 'center',
+    marginTop: 10
+  },
+  buttonText: { color: 'white', fontWeight: 'bold', marginLeft: 10, letterSpacing: 1 },
+
+  historySection: { paddingHorizontal: 25, marginTop: 30 },
+  historyTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
+  historyCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 15, 
+    borderRadius: 18, 
+    marginBottom: 10,
+    borderWidth: 1
+  },
+  historyAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(45, 121, 243, 0.1)', justifyContent: 'center', alignItems: 'center' },
+  historyName: { fontSize: 15, fontWeight: 'bold' },
+  historyMeta: { fontSize: 12, marginTop: 2 }
 });

@@ -1,20 +1,21 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Navegacao from "@/components/Navegacao";
+import { Ionicons } from "@expo/vector-icons";
 
 const SERVICOS = [
-  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', cor: '#ff8c00' },
-  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', cor: '#2d79f3' },
-  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', cor: '#4caf50' },
+  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', cor: '#ff8c00', status: 'Ativo' },
+  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', cor: '#2d79f3', status: 'Ativo' },
+  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', cor: '#4caf50', status: 'Ativo' },
 ];
 
 export default function Marketplace() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(true);
+  const [abaAtiva, setAbaAtiva] = useState('comprar'); // 'comprar' ou 'vender'
 
-  // Carrega a preferência de tema toda vez que a tela entra em foco
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
@@ -22,7 +23,7 @@ export default function Marketplace() {
           const salvo = await AsyncStorage.getItem('@vizzo_theme');
           if (salvo !== null) setIsDark(salvo === 'dark');
         } catch (e) {
-          console.log("Erro ao carregar tema no Marketplace");
+          console.log("Erro no Marketplace");
         }
       };
       carregarTema();
@@ -41,39 +42,74 @@ export default function Marketplace() {
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>Vizzo Marketplace</Text>
-        <Text style={[styles.subtitle, { color: theme.subtitle }]}>Serviços prestados por seus vizinhos</Text>
+        
+        {/* SISTEMA DE ABAS */}
+        <View style={[styles.tabBar, { backgroundColor: theme.card }]}>
+          <TouchableOpacity 
+            style={[styles.tab, abaAtiva === 'comprar' && styles.tabAtiva]} 
+            onPress={() => setAbaAtiva('comprar')}
+          >
+            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? '#2d79f3' : theme.subtitle }]}>CONTRATAR</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, abaAtiva === 'vender' && styles.tabAtiva]} 
+            onPress={() => setAbaAtiva('vender')}
+          >
+            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? '#2d79f3' : theme.subtitle }]}>MEUS SERVIÇOS</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <FlatList
-        data={SERVICOS}
-        keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 25, paddingBottom: 120 }} 
-        renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: isDark ? 0 : 1 }]}>
-            <View style={[styles.iconBox, { backgroundColor: item.cor }]}>
-              <Text style={styles.iconText}>{item.nome[0]}</Text>
+      {abaAtiva === 'comprar' ? (
+        <FlatList
+          data={SERVICOS}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ padding: 25, paddingBottom: 120 }} 
+          renderItem={({ item }) => (
+            <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: isDark ? 0 : 1 }]}>
+              <View style={[styles.iconBox, { backgroundColor: item.cor }]}>
+                <Ionicons name="construct" size={24} color="white" />
+              </View>
+              <View style={styles.info}>
+                <Text style={[styles.serviceName, { color: theme.text }]}>{item.nome}</Text>
+                <Text style={[styles.provider, { color: theme.subtitle }]}>{item.prestador}</Text>
+                <View style={styles.badge}>
+                  <Ionicons name="checkmark-circle" size={12} color="#4caf50" />
+                  <Text style={styles.badgeText}>DISPONÍVEL</Text>
+                </View>
+                <Text style={styles.price}>{item.preco}</Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={styles.hireBtn}
+                onPress={() => router.push({ 
+                  pathname: "/Sucesso", 
+                  params: { mensagem: "O vizinho foi avisado! Ele entrará em contato pelo chat." } 
+                })}
+              >
+                <Text style={styles.hireBtnText}>Pedir</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.info}>
-              <Text style={[styles.serviceName, { color: theme.text }]}>{item.nome}</Text>
-              <Text style={[styles.provider, { color: theme.subtitle }]}>{item.prestador}</Text>
-              <Text style={styles.price}>{item.preco}</Text>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.hireBtn}
-              activeOpacity={0.7}
-              onPress={() => router.push({ 
-                pathname: "/Sucesso", 
-                params: { mensagem: "O prestador foi notificado e entrará em contato!" } 
-              })}
-            >
-              <Text style={styles.hireBtnText}>Contratar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+          )}
+        />
+      ) : (
+        /* ABA DE OFERECER SERVIÇO (VAZIA POR ENQUANTO) */
+        <View style={styles.emptyContainer}>
+          <Ionicons name="briefcase-outline" size={80} color={theme.border} />
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>Você ainda não oferece serviços</Text>
+          <Text style={[styles.emptySub, { color: theme.subtitle }]}>Compartilhe seus talentos com o condomínio!</Text>
+        </View>
+      )}
 
-      {/* Navegação fixa no rodapé */}
+      {/* BOTÃO FLUTUANTE PARA ANUNCIAR */}
+      <TouchableOpacity 
+        style={styles.fab}
+        activeOpacity={0.9}
+        onPress={() => router.push("/NovoServico")} // Você pode criar essa tela depois
+      >
+        <Ionicons name="add" size={32} color="white" />
+      </TouchableOpacity>
+
       <Navegacao />
     </View>
   );
@@ -81,31 +117,48 @@ export default function Marketplace() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 25, paddingTop: 60 },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  subtitle: { fontSize: 14, marginTop: 4 },
+  header: { padding: 25, paddingTop: 60, paddingBottom: 10 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  tabBar: { flexDirection: 'row', borderRadius: 12, padding: 5, marginBottom: 10 },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
+  tabAtiva: { backgroundColor: 'rgba(45, 121, 243, 0.1)' },
+  tabText: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   card: { 
-    padding: 15, 
-    borderRadius: 15, 
+    padding: 18, 
+    borderRadius: 20, 
     flexDirection: 'row', 
     alignItems: 'center', 
     marginBottom: 15,
-    elevation: 3,
+    elevation: 4,
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 8,
   },
-  iconBox: { width: 50, height: 50, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  iconText: { color: 'white', fontWeight: 'bold', fontSize: 20 },
+  iconBox: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1, marginLeft: 15 },
   serviceName: { fontWeight: 'bold', fontSize: 16 },
-  provider: { fontSize: 12 },
-  price: { color: '#ff8c00', fontWeight: 'bold', marginTop: 4 },
-  hireBtn: { 
-    backgroundColor: '#2d79f3', 
-    paddingVertical: 10, 
-    paddingHorizontal: 15, 
-    borderRadius: 10 
+  provider: { fontSize: 12, marginBottom: 5 },
+  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(76, 175, 80, 0.1)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5, marginBottom: 5 },
+  badgeText: { color: '#4caf50', fontSize: 9, fontWeight: 'bold', marginLeft: 4 },
+  price: { color: '#2d79f3', fontWeight: 'bold', fontSize: 15 },
+  hireBtn: { backgroundColor: '#2d79f3', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
+  hireBtnText: { color: 'white', fontSize: 13, fontWeight: 'bold' },
+  fab: { 
+    position: 'absolute', 
+    bottom: 100, 
+    right: 25, 
+    backgroundColor: '#ff8c00', // Laranja para destacar
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
-  hireBtnText: { color: 'white', fontSize: 12, fontWeight: 'bold' }
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20 },
+  emptySub: { fontSize: 14, textAlign: 'center', marginTop: 10 },
 });

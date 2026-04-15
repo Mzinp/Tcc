@@ -1,27 +1,40 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import BotaoVoltar from '@/components/ArrowVoltar'; // Ajustado para o nome padrão do seu componente
+import BotaoVoltar from '@/components/ArrowVoltar';
 
 const ENCOMENDAS = [
-  { id: '1', objeto: 'Pacote Amazon', data: '22/03/2026', status: 'Aguardando Retirada', cor: '#ff8c00' },
-  { id: '2', objeto: 'Mercado Livre', data: '20/03/2026', status: 'Retirado', cor: '#8b8e98' },
+  { 
+    id: '1', 
+    objeto: 'Pacote Amazon', 
+    data: '14/04/2026', 
+    status: 'Aguardando Retirada', 
+    entregue: false, 
+    codigo: 'VIZ-9928',
+    local: 'Armário A-12'
+  },
+  { 
+    id: '2', 
+    objeto: 'Mercado Livre', 
+    data: '10/04/2026', 
+    status: 'Retirado', 
+    entregue: true, 
+    codigo: 'VIZ-8850',
+    local: 'Portaria Central'
+  },
 ];
 
 export default function Encomendas() {
   const [isDark, setIsDark] = useState(true);
 
-  // Carrega a preferência salva no Cadastro sempre que a tela ganha foco
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
         try {
           const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) {
-            setIsDark(salvo === 'dark');
-          }
+          if (salvo !== null) setIsDark(salvo === 'dark');
         } catch (e) {
           console.log("Erro ao carregar tema");
         }
@@ -31,35 +44,86 @@ export default function Encomendas() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
-    card: isDark ? "#1a1d1d" : "#ffffff",
+    bg: isDark ? "#0f1111" : "#ffffff", // Branco Puro
+    card: isDark ? "#1a1d1d" : "#f9f9f9",
     text: isDark ? "#ffffff" : "#0f1111",
     subText: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#252828" : "#dddddd",
+    border: isDark ? "#252828" : "#eeeeee",
+    accent: "#2d79f3"
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <View style={styles.header}>
-        {/* O botão voltar agora recebe a cor dinâmica baseada no tema */}
+      <View style={styles.topHeader}>
         <BotaoVoltar cor={theme.text} />
-        <Text style={[styles.title, { color: theme.text }]}>Minhas Encomendas</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.sectionTitle, { color: theme.subText }]}>PACOTES NA PORTARIA</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerInfo}>
+            <Text style={[styles.title, { color: theme.text }]}>Encomendas</Text>
+            <Text style={[styles.subtitle, { color: theme.subText }]}>Gerencie seus pacotes recebidos</Text>
+        </View>
+
+        {/* CARD DE AVISO RÁPIDO */}
+        {!ENCOMENDAS.every(e => e.entregue) && (
+            <View style={styles.alertCard}>
+                <Ionicons name="notifications" size={20} color="white" />
+                <Text style={styles.alertText}>Você tem pacotes pendentes na portaria.</Text>
+            </View>
+        )}
+
+        <Text style={[styles.sectionTitle, { color: theme.subText }]}>HISTÓRICO RECENTE</Text>
         
         {ENCOMENDAS.map((item) => (
-          <View key={item.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <View style={[styles.statusBadge, { backgroundColor: item.cor }]} />
-            <View style={styles.info}>
-              <Text style={[styles.objetoText, { color: theme.text }]}>{item.objeto}</Text>
-              <Text style={[styles.dataText, { color: theme.subText }]}>Chegou em: {item.data}</Text>
-              <Text style={[styles.statusText, { color: item.cor }]}>{item.status}</Text>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            key={item.id} 
+            style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+          >
+            <View style={[styles.iconBox, { backgroundColor: item.entregue ? theme.border : 'rgba(45, 121, 243, 0.1)' }]}>
+              <Ionicons 
+                name={item.entregue ? "mail-open-outline" : "cube"} 
+                size={24} 
+                color={item.entregue ? theme.subText : theme.accent} 
+              />
             </View>
-            <Ionicons name="cube-outline" size={24} color={isDark ? "#353838" : "#ccc"} />
-          </View>
+
+            <View style={styles.info}>
+              <View style={styles.row}>
+                <Text style={[styles.objetoText, { color: theme.text }]}>{item.objeto}</Text>
+                <Text style={[styles.codeText, { color: theme.accent }]}>{item.codigo}</Text>
+              </View>
+
+              <View style={styles.detailsRow}>
+                 <Ionicons name="location-outline" size={12} color={theme.subText} />
+                 <Text style={[styles.detailText, { color: theme.subText }]}>{item.local}</Text>
+                 <View style={styles.dot} />
+                 <Text style={[styles.detailText, { color: theme.subText }]}>{item.data}</Text>
+              </View>
+
+              <View style={[
+                  styles.statusBadge, 
+                  { backgroundColor: item.entregue ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 140, 0, 0.1)' }
+                ]}>
+                  <View style={[styles.statusDot, { backgroundColor: item.entregue ? '#4caf50' : '#ff8c00' }]} />
+                  <Text style={[styles.statusText, { color: item.entregue ? "#4caf50" : "#ff8c00" }]}>
+                    {item.status}
+                  </Text>
+              </View>
+            </View>
+
+            {!item.entregue && (
+                <View style={styles.arrowIcon}>
+                    <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+                </View>
+            )}
+          </TouchableOpacity>
         ))}
+
+        <TouchableOpacity style={[styles.qrButton, { borderColor: theme.accent }]}>
+            <Ionicons name="qr-code-outline" size={20} color={theme.accent} />
+            <Text style={[styles.qrButtonText, { color: theme.accent }]}>MOSTRAR QR CODE DE RETIRADA</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -67,21 +131,72 @@ export default function Encomendas() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 60, paddingHorizontal: 15 },
-  title: { fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
-  content: { padding: 25 },
-  sectionTitle: { fontSize: 12, fontWeight: 'bold', marginBottom: 20, letterSpacing: 1 },
-  card: { 
-    padding: 20, 
+  topHeader: { paddingTop: 60, paddingHorizontal: 15 },
+  headerInfo: { paddingHorizontal: 25, marginBottom: 20 },
+  title: { fontSize: 30, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, marginTop: 5 },
+  content: { paddingBottom: 50 },
+  
+  alertCard: { 
+    marginHorizontal: 25, 
+    backgroundColor: '#2d79f3', 
+    padding: 15, 
     borderRadius: 15, 
     flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 15, 
-    borderWidth: 1 
+    alignItems: 'center',
+    marginBottom: 25
   },
-  statusBadge: { width: 4, height: '100%', borderRadius: 2, marginRight: 15 },
-  info: { flex: 1 },
+  alertText: { color: 'white', fontWeight: 'bold', fontSize: 13, marginLeft: 10 },
+
+  sectionTitle: { fontSize: 10, fontWeight: '900', marginBottom: 15, letterSpacing: 2, paddingHorizontal: 25 },
+  
+  card: { 
+    marginHorizontal: 20,
+    padding: 15, 
+    borderRadius: 22, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 12, 
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+  },
+  iconBox: { width: 55, height: 55, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  info: { flex: 1, marginLeft: 15 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   objetoText: { fontSize: 16, fontWeight: 'bold' },
-  dataText: { fontSize: 12, marginVertical: 4 },
-  statusText: { fontSize: 12, fontWeight: 'bold' }
+  codeText: { fontSize: 10, fontWeight: '800' },
+  
+  detailsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6 },
+  detailText: { fontSize: 12, marginLeft: 4 },
+  dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#888', marginHorizontal: 8 },
+
+  statusBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 6,
+    marginTop: 2
+  },
+  statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  statusText: { fontSize: 10, fontWeight: 'bold' },
+  
+  arrowIcon: { marginLeft: 10 },
+
+  qrButton: { 
+    margin: 25, 
+    marginTop: 10,
+    borderWidth: 2, 
+    borderRadius: 15, 
+    padding: 18, 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderStyle: 'dashed'
+  },
+  qrButtonText: { fontWeight: 'bold', fontSize: 13, marginLeft: 10 }
 });

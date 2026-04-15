@@ -3,12 +3,12 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from "expo-router";
 import React, { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, Pressable } from "react-native";
 
 export default function Home() {
   const [isDark, setIsDark] = useState(true); 
+  const [menuVisible, setMenuVisible] = useState(false); 
   
-  // Carrega a preferência de tema do armazenamento local
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
@@ -23,12 +23,20 @@ export default function Home() {
     }, [])
   );
 
+  const toggleTheme = async () => {
+    const novoTema = !isDark;
+    setIsDark(novoTema);
+    await AsyncStorage.setItem('@vizzo_theme', novoTema ? 'dark' : 'light');
+    setMenuVisible(false);
+  };
+
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
+    // Ajustado para branco puro (#ffffff) no modo claro
+    bg: isDark ? "#0f1111" : "#ffffff", 
     card: isDark ? "#1a1d1d" : "#ffffff",
     text: isDark ? "#ffffff" : "#0f1111",
     subtitle: isDark ? "#b0b0b0" : "#666666",
-    border: isDark ? "#252828" : "#e0e0e0"
+    border: isDark ? "#252828" : "#f0f0f0" // Borda mais suave para o branco
   };
 
   const SERVICOS_RAPIDOS = [
@@ -40,20 +48,54 @@ export default function Home() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Olá, Morador</Text>
           <Text style={[styles.subGreeting, { color: theme.subtitle }]}>O que vamos resolver hoje?</Text>
         </View>
-        <Image 
-          source={require("../assets/img/logo.png")} 
-          style={{ width: 40, height: 40 }} 
-          resizeMode="contain" 
-        />
+        
+        <TouchableOpacity 
+          style={styles.menuTrigger} 
+          onPress={() => setMenuVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="ellipsis-vertical" size={24} color={isDark ? "#ffffff" : "#2d79f3"} />
+        </TouchableOpacity>
       </View>
 
+      <Modal
+        transparent={true}
+        visible={menuVisible}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={[styles.menuPopUp, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
+              <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={20} color="#2d79f3" />
+              <Text style={[styles.menuItemText, { color: theme.text }]}>
+                {isDark ? "Modo Claro" : "Modo Escuro"}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
+
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => { setMenuVisible(false); router.push("/Perfil"); }}
+            >
+              <Ionicons name="person-outline" size={20} color="#2d79f3" />
+              <Text style={[styles.menuItemText, { color: theme.text }]}>Configurações</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Card de Destaque atualizado para usar a tela de Sucesso */}
         <View style={[styles.mainCard, { backgroundColor: "#2d79f3" }]}>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle}>Assembleia Geral</Text>
@@ -113,6 +155,29 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 24, fontWeight: 'bold', color: '#2d79f3' },
   subGreeting: { fontSize: 14 },
+  menuTrigger: { padding: 5 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' }, // Overlay mais suave
+  menuPopUp: { 
+    position: 'absolute', 
+    top: 60, 
+    right: 25, 
+    width: 180, 
+    borderRadius: 15, 
+    padding: 10, 
+    borderWidth: 1,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+  },
+  menuItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: 12, 
+    paddingHorizontal: 10 
+  },
+  menuItemText: { marginLeft: 12, fontSize: 14, fontWeight: '600' },
+  menuDivider: { height: 1, width: '90%', alignSelf: 'center' },
   content: { padding: 25 },
   mainCard: { 
     padding: 20, 
@@ -122,9 +187,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 35,
     elevation: 8,
-    shadowColor: "#2d79f3",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
   },
   cardInfo: { flex: 1 },
   cardTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
@@ -152,14 +214,14 @@ const styles = StyleSheet.create({
     marginBottom: 18, 
     elevation: 4,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 5,
   },
   iconCircle: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(139, 142, 152, 0.1)',
+    backgroundColor: 'rgba(139, 142, 152, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12
