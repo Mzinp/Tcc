@@ -6,17 +6,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Navegacao() {
   const pathname = usePathname();
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState<boolean | null>(null); // null evita o flash de cor errada
 
-  // Sincroniza o tema da barra com a preferência do usuário
+  // Sincroniza o tema da barra
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
         try {
           const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
+          setIsDark(salvo === null ? true : salvo === 'dark');
         } catch (e) {
-          console.log("Erro ao carregar tema na Navegação");
+          setIsDark(true);
         }
       };
       carregarTema();
@@ -25,22 +25,25 @@ export default function Navegacao() {
 
   const theme = {
     bg: isDark ? "#1a1d1d" : "#ffffff",
-    border: isDark ? "#252828" : "#e0e0e0",
+    border: isDark ? "#252828" : "#f0f0f0",
     inactive: isDark ? "#8b8e98" : "#999999",
-    active: "#2d79f3" // Azul padrão do Vizzo
+    active: "#2d79f3" 
   };
 
+  // Novo item "Chat" adicionado
   const menuItems = [
     { name: "Início", icon: "home", route: "/home" },
     { name: "Mercado", icon: "cart", route: "/Marketplace" },
-    { name: "Perfil", icon: "perfil" as any, route: "/Perfil" }, 
+    { name: "Chat", icon: "chatbubbles", route: "/Mensagens" }, // Nova Rota
+    { name: "Perfil", icon: "person", route: "/Perfil" }, 
   ];
+
+  // Se o tema ainda não carregou, não renderiza para não dar "lag" visual
+  if (isDark === null) return null;
 
   return (
     <View style={[styles.navBar, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
       {menuItems.map((item) => {
-        // Correção para o ícone de perfil que no Ionicons é 'person'
-        const iconName = item.name === "Perfil" ? "person" : item.icon;
         const isActive = pathname === item.route;
         
         return (
@@ -51,8 +54,8 @@ export default function Navegacao() {
             activeOpacity={0.7}
           >
             <Ionicons 
-              name={isActive ? (iconName as any) : `${iconName}-outline`} 
-              size={24} 
+              name={isActive ? (item.icon as any) : `${item.icon}-outline`} 
+              size={22} 
               color={isActive ? theme.active : theme.inactive} 
             />
             <Text style={[styles.label, { color: isActive ? theme.active : theme.inactive }]}>
@@ -68,19 +71,19 @@ export default function Navegacao() {
 const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
-    height: 75,
+    height: 70, // Reduzi um pouco para ficar mais elegante com 4 itens
     borderTopWidth: 1,
     justifyContent: "space-around",
     alignItems: "center",
     position: "absolute",
     bottom: 0,
     width: "100%",
-    paddingBottom: 15, // Espaço extra para o "respiro" do design
-    elevation: 15, // Sombra no Android
-    shadowColor: "#000", // Sombra no iOS
+    paddingBottom: 10,
+    elevation: 20,
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
   },
   tab: { alignItems: "center", justifyContent: "center", flex: 1 },
-  label: { fontSize: 10, marginTop: 4, fontWeight: 'bold' }
+  label: { fontSize: 9, marginTop: 4, fontWeight: 'bold', letterSpacing: 0.5 }
 });
