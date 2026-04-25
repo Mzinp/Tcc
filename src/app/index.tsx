@@ -5,11 +5,11 @@ import { router } from "expo-router";
 export default function Index() {
   const [isDark, setIsDark] = useState(true);
   
-  // Cores: Preto vs Branco
   const theme = {
     bg: isDark ? "rgba(15, 17, 17, 0.85)" : "rgba(255, 255, 255, 0.85)",
     text: isDark ? "#ffffff" : "#0f1111",
-    secondaryBtn: isDark ? "rgba(255, 255, 255, 0.05)" : "#f0f0f0"
+    secondaryBtn: isDark ? "rgba(255, 255, 255, 0.05)" : "#f0f0f0",
+    cardBtn: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"
   };
 
   return (
@@ -33,14 +33,36 @@ export default function Index() {
           </Text>
 
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.mainButton} onPress={() => router.push("./Cadastro")}>
-              <Text style={styles.mainButtonText}>CRIAR CONTA</Text>
-            </TouchableOpacity>
+            {/* Título sutil para a escolha de cadastro */}
+            <Text style={[styles.choiceLabel, { color: theme.text }]}>QUERO ME CADASTRAR COMO:</Text>
+            
+            <View style={styles.rowButtons}>
+              <TouchableOpacity 
+                style={[styles.choiceButton, { backgroundColor: "#2d79f3" }]} 
+                onPress={() => router.push("/CadastroAdministrador")}
+              >
+                <Text style={styles.mainButtonText}>SÍNDICO</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.choiceButton, { backgroundColor: "#ff8c00" }]} 
+                onPress={() => router.push("/CadastroMorador")}
+              >
+                <Text style={styles.mainButtonText}>MORADOR</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.separatorContainer}>
+              <View style={styles.line} />
+              <Text style={styles.orText}>OU</Text>
+              <View style={styles.line} />
+            </View>
+
             <TouchableOpacity 
               style={[styles.secondaryButton, { backgroundColor: theme.secondaryBtn }]} 
-              onPress={() => router.push("./Login")}
+              onPress={() => router.push("/Login")}
             >
-              <Text style={[styles.secondaryButtonText, { color: theme.text }]}>ACESSAR LOGIN</Text>
+              <Text style={[styles.secondaryButtonText, { color: theme.text }]}>ACESSAR MINHA CONTA</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -55,11 +77,16 @@ const styles = StyleSheet.create({
   themeToggle: { position: 'absolute', top: 50, right: 20, padding: 10 },
   themeToggleText: { fontSize: 12, fontWeight: 'bold' },
   heroTag: { color: "#ff8c00", letterSpacing: 3, fontSize: 12, fontWeight: "700", marginBottom: 15 },
-  heroTitle: { fontSize: 40, fontWeight: "800", lineHeight: 46, marginBottom: 50 },
+  heroTitle: { fontSize: 40, fontWeight: "800", lineHeight: 46, marginBottom: 40 },
   italicText: { fontStyle: "italic", color: "#2d79f3" },
-  buttonContainer: { gap: 15 },
-  mainButton: { backgroundColor: "#2d79f3", padding: 20, borderRadius: 12, alignItems: "center" },
-  mainButtonText: { color: "white", fontWeight: "bold", letterSpacing: 1.5, fontSize: 13 },
+  buttonContainer: { gap: 10 },
+  choiceLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 1.5, marginBottom: 5, opacity: 0.7 },
+  rowButtons: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  choiceButton: { flex: 1, padding: 18, borderRadius: 12, alignItems: "center", justifyContent: 'center' },
+  mainButtonText: { color: "white", fontWeight: "bold", letterSpacing: 1.5, fontSize: 11 },
   secondaryButton: { borderWidth: 1.5, borderColor: "#353838", padding: 20, borderRadius: 12, alignItems: "center" },
   secondaryButtonText: { fontWeight: "bold", letterSpacing: 1.5, fontSize: 13 },
+  separatorContainer: { flexDirection: 'row', alignItems: 'center', marginVertical: 10 },
+  line: { flex: 1, height: 1, backgroundColor: '#353838' },
+  orText: { color: '#8b8e98', paddingHorizontal: 10, fontSize: 10, fontWeight: '700' }
 });
