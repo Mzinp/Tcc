@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from "expo-router";
 import React, { useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal, Pressable } from "react-native";
+import { COLORS } from "@/consts/colors";
 
 export default function Home() {
   const [isDark, setIsDark] = useState(true); 
@@ -31,19 +32,18 @@ export default function Home() {
   };
 
   const theme = {
-    // Ajustado para branco puro (#ffffff) no modo claro
-    bg: isDark ? "#0f1111" : "#ffffff", 
-    card: isDark ? "#1a1d1d" : "#ffffff",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subtitle: isDark ? "#b0b0b0" : "#666666",
-    border: isDark ? "#252828" : "#f0f0f0" // Borda mais suave para o branco
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subtitle: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    border: isDark ? COLORS.dark.border : COLORS.light.border
   };
 
   const SERVICOS_RAPIDOS = [
-    { name: "Reservas", icon: "calendar", color: "#ff8c00", route: "/Reservas" },
-    { name: "Encomendas", icon: "cube", color: "#2d79f3", route: "/Encomendas" },
-    { name: "Visitantes", icon: "people", color: "#4caf50", route: "/Visitantes" },
-    { name: "Ocorrências", icon: "warning", color: "#f44336", route: "/Ocorrencias" }
+    { name: "Reservas", icon: "calendar", color: COLORS.orange, route: "/(main)/(stack)/reservas" },
+    { name: "Encomendas", icon: "cube", color: COLORS.primary, route: "/(main)/(stack)/encomendas" },
+    { name: "Visitantes", icon: "people", color: COLORS.green, route: "/(main)/(stack)/visitantes" },
+    { name: "Ocorrências", icon: "warning", color: COLORS.red, route: "/(main)/(stack)/ocorrencias" }
   ];
 
   return (
@@ -60,7 +60,7 @@ export default function Home() {
           onPress={() => setMenuVisible(true)}
           activeOpacity={0.7}
         >
-          <Ionicons name="ellipsis-vertical" size={24} color={isDark ? "#ffffff" : "#2d79f3"} />
+          <Ionicons name="ellipsis-vertical" size={24} color={isDark ? "#ffffff" : COLORS.primary} />
         </TouchableOpacity>
       </View>
 
@@ -76,7 +76,7 @@ export default function Home() {
         >
           <View style={[styles.menuPopUp, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <TouchableOpacity style={styles.menuItem} onPress={toggleTheme}>
-              <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={20} color="#2d79f3" />
+              <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={20} color={COLORS.primary} />
               <Text style={[styles.menuItemText, { color: theme.text }]}>
                 {isDark ? "Modo Claro" : "Modo Escuro"}
               </Text>
@@ -86,9 +86,9 @@ export default function Home() {
 
             <TouchableOpacity 
               style={styles.menuItem} 
-              onPress={() => { setMenuVisible(false); router.push("/Perfil"); }}
+              onPress={() => { setMenuVisible(false); router.push("/(main)/(tabs)/perfil"); }}
             >
-              <Ionicons name="person-outline" size={20} color="#2d79f3" />
+              <Ionicons name="person-outline" size={20} color={COLORS.primary} />
               <Text style={[styles.menuItemText, { color: theme.text }]}>Configurações</Text>
             </TouchableOpacity>
           </View>
@@ -96,7 +96,7 @@ export default function Home() {
       </Modal>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.mainCard, { backgroundColor: "#2d79f3" }]}>
+        <View style={[styles.mainCard, { backgroundColor: COLORS.primary }]}>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle}>Assembleia Geral</Text>
             <Text style={styles.cardDesc}>Hoje às 19:00 no Salão de Festas</Text>
@@ -104,7 +104,7 @@ export default function Home() {
               activeOpacity={0.7} 
               style={styles.cardButton}
               onPress={() => router.push({
-                pathname: "/Sucesso",
+                pathname: "/sucesso",
                 params: { mensagem: "Presença confirmada na Assembleia!" }
               })}
             >
@@ -153,10 +153,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center' 
   },
-  greeting: { fontSize: 24, fontWeight: 'bold', color: '#2d79f3' },
+  greeting: { fontSize: 24, fontWeight: 'bold', color: COLORS.primary },
   subGreeting: { fontSize: 14 },
   menuTrigger: { padding: 5 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' }, // Overlay mais suave
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.1)' },
   menuPopUp: { 
     position: 'absolute', 
     top: 60, 
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 5
   },
-  cardButtonText: { color: '#2d79f3', fontWeight: 'bold', fontSize: 13 },
+  cardButtonText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 13 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, letterSpacing: 0.5 },
   grid: { 
     flexDirection: 'row', 

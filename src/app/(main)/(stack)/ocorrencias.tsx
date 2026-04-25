@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Keyboa
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
 export default function Ocorrencias() {
   const [isDark, setIsDark] = useState(true);
@@ -17,12 +18,12 @@ export default function Ocorrencias() {
   }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
-    input: isDark ? "#1a1d1d" : "#f0f0f0",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#252828" : "#eeeeee"
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    input: isDark ? COLORS.dark.input : COLORS.light.input,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    border: isDark ? COLORS.dark.border : COLORS.light.border
   };
 
   return (
@@ -32,7 +33,7 @@ export default function Ocorrencias() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <BotaoVoltar cor={theme.text} />
+          <ArrowBack cor={theme.text} />
           <Text style={[styles.title, { color: theme.text }]}>Registrar Ocorrência</Text>
           <Text style={[styles.subtitle, { color: theme.subText }]}>Relate problemas ou incidentes no condomínio</Text>
         </View>
@@ -58,16 +59,15 @@ export default function Ocorrencias() {
             />
           </View>
 
-          {/* ÁREA DE ANEXO (Simulação) */}
           <TouchableOpacity style={[styles.attachButton, { borderColor: theme.border, borderStyle: 'dashed' }]}>
-            <Ionicons name="camera-outline" size={24} color="#f44336" />
+            <Ionicons name="camera-outline" size={24} color={COLORS.red} />
             <Text style={[styles.attachText, { color: theme.text }]}>Anexar Foto ou Vídeo</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.mainButton}
             onPress={() => router.push({
-              pathname: "/Sucesso",
+              pathname: "/(main)/(modal)/sucesso",
               params: { mensagem: "Sua ocorrência foi enviada ao síndico com sucesso!" }
             })}
           >
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: 'bold', marginTop: 15 },
   subtitle: { fontSize: 14, marginTop: 5 },
   form: { padding: 25 },
-  label: { color: '#f44336', fontSize: 11, fontWeight: '900', marginBottom: 10, letterSpacing: 1 },
+  label: { color: COLORS.red, fontSize: 11, fontWeight: '900', marginBottom: 10, letterSpacing: 1 },
   inputContainer: { 
     borderWidth: 1, 
     borderRadius: 15, 
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   attachText: { marginLeft: 10, fontWeight: 'bold', fontSize: 14 },
   mainButton: { 
-    backgroundColor: '#f44336', 
+    backgroundColor: COLORS.red, 
     padding: 18, 
     borderRadius: 15, 
     flexDirection: 'row', 

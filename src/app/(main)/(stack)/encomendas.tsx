@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from "rea
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
 const ENCOMENDAS = [
   { 
@@ -44,18 +45,18 @@ export default function Encomendas() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff", // Branco Puro
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#252828" : "#eeeeee",
-    accent: "#2d79f3"
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    border: isDark ? COLORS.dark.border : COLORS.light.border,
+    accent: COLORS.primary
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.topHeader}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -64,7 +65,6 @@ export default function Encomendas() {
             <Text style={[styles.subtitle, { color: theme.subText }]}>Gerencie seus pacotes recebidos</Text>
         </View>
 
-        {/* CARD DE AVISO RÁPIDO */}
         {!ENCOMENDAS.every(e => e.entregue) && (
             <View style={styles.alertCard}>
                 <Ionicons name="notifications" size={20} color="white" />
@@ -105,8 +105,8 @@ export default function Encomendas() {
                   styles.statusBadge, 
                   { backgroundColor: item.entregue ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 140, 0, 0.1)' }
                 ]}>
-                  <View style={[styles.statusDot, { backgroundColor: item.entregue ? '#4caf50' : '#ff8c00' }]} />
-                  <Text style={[styles.statusText, { color: item.entregue ? "#4caf50" : "#ff8c00" }]}>
+                  <View style={[styles.statusDot, { backgroundColor: item.entregue ? COLORS.green : COLORS.orange }]} />
+                  <Text style={[styles.statusText, { color: item.entregue ? COLORS.green : COLORS.orange }]}>
                     {item.status}
                   </Text>
               </View>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   
   alertCard: { 
     marginHorizontal: 25, 
-    backgroundColor: '#2d79f3', 
+    backgroundColor: COLORS.primary, 
     padding: 15, 
     borderRadius: 15, 
     flexDirection: 'row', 

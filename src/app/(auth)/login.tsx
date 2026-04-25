@@ -10,33 +10,30 @@ import {
   Platform, 
   Image 
 } from "react-native";
-import { router, useFocusEffect } from 'expo-router';
+import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "@/consts/colors";
+import ArrowBack from "@/components/ArrowVoltar";
 
 export default function Login() {
   const [isDark, setIsDark] = useState(true);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema no Login");
-        }
-      };
-      carregarTema();
-    }, [])
-  );
+  React.useEffect(() => {
+    const carregarTema = async () => {
+      const salvo = await AsyncStorage.getItem('@vizzo_theme');
+      if (salvo !== null) setIsDark(salvo === 'dark');
+    };
+    carregarTema();
+  }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff", // Branco Puro
-    card: isDark ? "#1a1d1d" : "#ffffff",
-    input: isDark ? "#252828" : "#f9f9f9", // Um cinza quase branco para os inputs
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    input: isDark ? "#252828" : "#f9f9f9",
     border: isDark ? "#353838" : "#eeeeee",
-    text: isDark ? "#ffffff" : "#0f1111",
-    label: isDark ? "#8b8e98" : "#666666"
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    label: isDark ? COLORS.dark.subText : COLORS.light.subText,
   };
 
   return (
@@ -55,7 +52,7 @@ export default function Login() {
           
           <View style={styles.logoContainer}>
             <Image 
-              source={require("../assets/img/logo.png")} 
+              source={require("@/assets/img/logo.png")} 
               style={styles.logo} 
               resizeMode="contain" 
             />
@@ -86,14 +83,14 @@ export default function Login() {
 
           <TouchableOpacity 
             style={styles.mainButton} 
-            onPress={() => router.replace("/home")} // Use replace para login
+            onPress={() => router.replace("/(main)/(tabs)/home")} 
             activeOpacity={0.8}
           >
             <Text style={styles.mainButtonText}>ENTRAR NO VIZZO</Text>
           </TouchableOpacity>
 
           <View style={styles.esqueciView}>
-            <TouchableOpacity onPress={() => router.push("/EsqueciSenha")}>
+            <TouchableOpacity onPress={() => router.push("/(auth)/esqueci-senha")}>
               <Text style={styles.esqueciText}>Esqueceu a senha?</Text>
             </TouchableOpacity>
           </View>
@@ -101,10 +98,10 @@ export default function Login() {
 
         <TouchableOpacity 
           style={{ marginTop: 30, alignItems: 'center' }} 
-          onPress={() => router.push("/Cadastro")}
+          onPress={() => router.push("/(auth)/cadastro")}
         >
           <Text style={{ color: theme.label, fontSize: 14 }}>
-            Não tem uma conta? <Text style={{ color: "#2d79f3", fontWeight: 'bold' }}>Cadastre-se aqui</Text>
+            Não tem uma conta? <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>Cadastre-se aqui</Text>
           </Text>
         </TouchableOpacity>
 
@@ -117,9 +114,9 @@ const styles = StyleSheet.create({
   centerContent: { flexGrow: 1, justifyContent: "center", padding: 25 },
   loginForm: { 
     padding: 35, 
-    borderRadius: 30, // Mais arredondado para um look moderno
+    borderRadius: 30, 
     borderTopWidth: 6, 
-    borderTopColor: "#ff8c00", 
+    borderTopColor: COLORS.orange, 
     elevation: 8, 
     shadowColor: "#000", 
     shadowRadius: 15 
@@ -132,7 +129,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 55,
   },
-  brandTitle: { color: "#ff8c00", fontSize: 12, fontWeight: "900", letterSpacing: 5, textAlign: "center", marginBottom: 5 },
+  brandTitle: { color: COLORS.orange, fontSize: 12, fontWeight: "900", letterSpacing: 5, textAlign: "center", marginBottom: 5 },
   loginTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 30, textAlign: "center" },
   inputLabel: { fontSize: 10, fontWeight: "700", marginBottom: 8, letterSpacing: 1 },
   inputContainer: { 
@@ -143,7 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center' 
   },
   mainButton: { 
-    backgroundColor: "#2d79f3", 
+    backgroundColor: COLORS.primary, 
     padding: 18, 
     borderRadius: 15, 
     alignItems: "center", 
@@ -152,5 +149,5 @@ const styles = StyleSheet.create({
   },
   mainButtonText: { color: "#fff", fontWeight: "bold", letterSpacing: 1.5, fontSize: 14 },
   esqueciView: { marginTop: 25, alignItems: 'center' },
-  esqueciText: { color: "#2d79f3", fontWeight: "600", fontSize: 13 }
+  esqueciText: { color: COLORS.primary, fontWeight: "600", fontSize: 13 }
 });

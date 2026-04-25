@@ -11,12 +11,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
 export default function Visitantes() {
   const [isDark, setIsDark] = useState(true);
 
-  // Mock de histórico para dar corpo à tela
   const historico = [
     { id: '1', nome: 'Ana Souza', data: 'Ontem', tipo: 'Familiar' },
     { id: '2', nome: 'Marcos Uber', data: '12/04', tipo: 'Serviço' },
@@ -37,18 +37,18 @@ export default function Visitantes() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff", // Branco Puro
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    input: isDark ? "#1a1d1d" : "#f0f0f0",
-    border: isDark ? "#252828" : "#eeeeee",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    input: isDark ? COLORS.dark.input : COLORS.light.input,
+    border: isDark ? COLORS.dark.border : COLORS.light.border,
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.topHeader}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -57,10 +57,9 @@ export default function Visitantes() {
           <Text style={[styles.subtitle, { color: theme.subText }]}>Gerencie e autorize acessos à sua unidade</Text>
         </View>
 
-        {/* CARD DE NOVA AUTORIZAÇÃO */}
         <View style={[styles.formCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={styles.sectionTitleRow}>
-            <Ionicons name="person-add-outline" size={20} color="#2d79f3" />
+            <Ionicons name="person-add-outline" size={20} color={COLORS.primary} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Nova Autorização</Text>
           </View>
 
@@ -100,7 +99,7 @@ export default function Visitantes() {
           <TouchableOpacity 
             style={styles.mainButton}
             onPress={() => router.push({ 
-              pathname: "/Sucesso", 
+              pathname: "/(main)/(modal)/sucesso", 
               params: { mensagem: "A portaria recebeu a autorização!" } 
             })}
           >
@@ -109,7 +108,6 @@ export default function Visitantes() {
           </TouchableOpacity>
         </View>
 
-        {/* HISTÓRICO RECENTE */}
         <View style={styles.historySection}>
           <Text style={[styles.historyTitle, { color: theme.text }]}>Recentes</Text>
           {historico.map((item) => (
@@ -118,13 +116,13 @@ export default function Visitantes() {
                 style={[styles.historyCard, { backgroundColor: theme.card, borderColor: theme.border }]}
             >
               <View style={styles.historyAvatar}>
-                <Ionicons name="person" size={20} color="#2d79f3" />
+                <Ionicons name="person" size={20} color={COLORS.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: 15 }}>
                 <Text style={[styles.historyName, { color: theme.text }]}>{item.nome}</Text>
                 <Text style={[styles.historyMeta, { color: theme.subText }]}>{item.tipo} • {item.data}</Text>
               </View>
-              <Ionicons name="repeat-outline" size={20} color="#2d79f3" />
+              <Ionicons name="repeat-outline" size={20} color={COLORS.primary} />
             </TouchableOpacity>
           ))}
         </View>
@@ -155,13 +153,13 @@ const styles = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   sectionTitle: { fontSize: 16, fontWeight: 'bold', marginLeft: 10 },
   
-  label: { color: '#2d79f3', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  label: { color: COLORS.primary, fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
   inputWrapper: { borderRadius: 12, borderWidth: 1, height: 50, paddingHorizontal: 15, justifyContent: 'center', marginBottom: 15 },
   input: { flex: 1, fontSize: 14 },
   row: { flexDirection: 'row' },
 
   mainButton: { 
-    backgroundColor: '#2d79f3', 
+    backgroundColor: COLORS.primary, 
     padding: 16, 
     borderRadius: 15, 
     flexDirection: 'row',

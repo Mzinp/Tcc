@@ -12,7 +12,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
 const CATEGORIAS = [
   { id: '1', nome: 'Reformas', icon: 'construct' },
@@ -26,7 +27,6 @@ export default function NovoServico() {
   const [isDark, setIsDark] = useState(true);
   const [categoriaSel, setCategoriaSel] = useState('1');
   
-  // Estados para o formulário
   const [titulo, setTitulo] = useState('');
   const [preco, setPreco] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -40,12 +40,12 @@ export default function NovoServico() {
   }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
-    card: isDark ? "#1a1d1d" : "#ffffff",
-    text: isDark ? "#ffffff" : "#0f1111",
+    bg: isDark ? COLORS.dark.bg : "#f5f5f5",
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
     inputBg: isDark ? "#252828" : "#eeeeee",
     border: isDark ? "#353838" : "#dddddd",
-    label: isDark ? "#8b8e98" : "#666666"
+    label: isDark ? COLORS.dark.subText : "#666666"
   };
 
   return (
@@ -54,7 +54,7 @@ export default function NovoServico() {
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
       <View style={styles.header}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
         <Text style={[styles.title, { color: theme.text }]}>Oferecer Serviço</Text>
       </View>
 
@@ -76,15 +76,15 @@ export default function NovoServico() {
               onPress={() => setCategoriaSel(cat.id)}
               style={[
                 styles.catItem, 
-                { backgroundColor: theme.card, borderColor: categoriaSel === cat.id ? "#2d79f3" : theme.border }
+                { backgroundColor: theme.card, borderColor: categoriaSel === cat.id ? COLORS.primary : theme.border }
               ]}
             >
               <Ionicons 
                 name={cat.icon as any} 
                 size={20} 
-                color={categoriaSel === cat.id ? "#2d79f3" : theme.label} 
+                color={categoriaSel === cat.id ? COLORS.primary : theme.label} 
               />
-              <Text style={[styles.catText, { color: categoriaSel === cat.id ? "#2d79f3" : theme.label }]}>
+              <Text style={[styles.catText, { color: categoriaSel === cat.id ? COLORS.primary : theme.label }]}>
                 {cat.nome}
               </Text>
             </TouchableOpacity>
@@ -113,7 +113,7 @@ export default function NovoServico() {
         />
 
         <View style={styles.qrInfo}>
-          <Ionicons name="qr-code-outline" size={24} color="#ff8c00" />
+          <Ionicons name="qr-code-outline" size={24} color={COLORS.orange} />
           <Text style={[styles.qrText, { color: theme.label }]}>
             Ao finalizar, um QR Code será gerado para que seus vizinhos possam te contratar rapidamente.
           </Text>
@@ -122,7 +122,7 @@ export default function NovoServico() {
         <TouchableOpacity 
           style={styles.mainButton}
           onPress={() => router.push({
-            pathname: "/Sucesso",
+            pathname: "/(main)/(modal)/sucesso",
             params: { mensagem: "Serviço cadastrado! Seu QR Code de prestador já está ativo." }
           })}
         >
@@ -166,6 +166,6 @@ const styles = StyleSheet.create({
     marginBottom: 30
   },
   qrText: { fontSize: 11, marginLeft: 10, flex: 1, lineHeight: 16 },
-  mainButton: { backgroundColor: "#2d79f3", padding: 18, borderRadius: 15, alignItems: "center" },
+  mainButton: { backgroundColor: COLORS.primary, padding: 18, borderRadius: 15, alignItems: "center" },
   mainButtonText: { color: "white", fontWeight: "bold", letterSpacing: 1 },
 });

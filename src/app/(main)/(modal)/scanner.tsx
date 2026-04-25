@@ -3,13 +3,13 @@ import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import BotaoVoltar from "@/components/ArrowVoltar";
+import { COLORS } from "@/consts/colors";
+import ArrowBack from "@/components/ArrowVoltar";
 
 export default function Scanner() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
-  // Pede permissão para usar a câmera
   useEffect(() => {
     if (!permission) requestPermission();
   }, []);
@@ -29,12 +29,10 @@ export default function Scanner() {
     );
   }
 
-  // Função disparada quando o QR Code é lido
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     setScanned(true);
-    // Aqui simulamos que o QR Code contém o nome do serviço ou ID do vizinho
     router.push({
-      pathname: "/Sucesso",
+      pathname: "/sucesso",
       params: { mensagem: `Serviço detectado: ${data}. Notificação enviada ao vizinho!` }
     });
   };
@@ -49,7 +47,6 @@ export default function Scanner() {
         }}
       />
       
-      {/* Overlay para dar estilo de "Mira" */}
       <View style={styles.overlay}>
         <View style={styles.unfocusedContainer}></View>
         <View style={styles.middleContainer}>
@@ -66,7 +63,7 @@ export default function Scanner() {
       </View>
 
       <View style={styles.header}>
-        <BotaoVoltar cor="#ffffff" />
+        <ArrowBack cor="#ffffff" />
         <Text style={styles.headerTitle}>Escanear Vizinho</Text>
       </View>
 
@@ -84,20 +81,18 @@ const styles = StyleSheet.create({
   header: { position: 'absolute', top: 60, left: 20, flexDirection: 'row', alignItems: 'center' },
   headerTitle: { color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 10 },
   text: { color: "white", textAlign: "center", marginBottom: 20, paddingHorizontal: 30 },
-  btn: { backgroundColor: "#2d79f3", padding: 15, borderRadius: 10 },
+  btn: { backgroundColor: COLORS.primary, padding: 15, borderRadius: 10 },
   btnText: { color: "white", fontWeight: "bold" },
   
-  // Estilo da Mira
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   unfocusedContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   middleContainer: { flexDirection: 'row', height: 250 },
   focusedContainer: { width: 250, backgroundColor: 'transparent', position: 'relative' },
   
-  // Cantos da mira
-  cornerTopLeft: { position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#2d79f3' },
-  cornerTopRight: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#2d79f3' },
-  cornerBottomLeft: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#2d79f3' },
-  cornerBottomRight: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#2d79f3' },
+  cornerTopLeft: { position: 'absolute', top: 0, left: 0, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: COLORS.primary },
+  cornerTopRight: { position: 'absolute', top: 0, right: 0, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: COLORS.primary },
+  cornerBottomLeft: { position: 'absolute', bottom: 0, left: 0, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: COLORS.primary },
+  cornerBottomRight: { position: 'absolute', bottom: 0, right: 0, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: COLORS.primary },
 
   rescanBtn: { position: 'absolute', bottom: 50, backgroundColor: '#ffffff', padding: 15, borderRadius: 12 },
   rescanText: { color: '#0f1111', fontWeight: 'bold' }

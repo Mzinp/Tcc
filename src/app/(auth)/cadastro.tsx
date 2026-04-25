@@ -12,8 +12,9 @@ import {
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BotaoVoltar from '@/components/ArrowVoltar';
 import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "@/consts/colors";
+import ArrowBack from "@/components/ArrowVoltar";
 
 export default function Cadastro() {
   const [isDark, setIsDark] = useState(true);
@@ -28,10 +29,10 @@ export default function Cadastro() {
   }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    inputBg: isDark ? "#1a1d1d" : "#ffffff",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    inputBg: isDark ? COLORS.dark.card : COLORS.light.card,
     border: isDark ? "#353838" : "#eeeeee",
-    text: isDark ? "#ffffff" : "#0f1111",
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
     label: isDark ? "#e0e0e0" : "#444444"
   };
 
@@ -43,12 +44,12 @@ export default function Cadastro() {
       <ScrollView contentContainerStyle={styles.centerContent} showsVerticalScrollIndicator={false}>
         
         <View style={styles.topRow}>
-          <BotaoVoltar cor={theme.text} />
+          <ArrowBack cor={theme.text} />
         </View>
         
         <View style={styles.logoContainer}>
           <Image 
-            source={require("../assets/img/logo.png")} 
+            source={require("@/assets/img/logo.png")} 
             style={styles.logo} 
             resizeMode="contain" 
           />
@@ -57,14 +58,13 @@ export default function Cadastro() {
         <Text style={[styles.cadastroTitle, { color: theme.text }]}>Criar nova conta no Vizzo</Text>
         
         <View style={styles.form}>
-          {/* SELEÇÃO DE CONDOMÍNIO */}
           <Text style={[styles.inputLabel, { color: theme.label }]}>MEU CONDOMÍNIO</Text>
           <TouchableOpacity 
             activeOpacity={0.8}
-            onPress={() => router.push("/LocalizarCondominio")}
+            onPress={() => router.push("/(auth)/localizar-condominio")}
             style={[styles.inputContainer, { 
               backgroundColor: theme.inputBg, 
-              borderColor: params.condonome ? "#2d79f3" : theme.border,
+              borderColor: params.condonome ? COLORS.primary : theme.border,
               borderWidth: params.condonome ? 2 : 1.5,
               borderStyle: params.condonome ? 'solid' : 'dashed' 
             }]}
@@ -73,7 +73,7 @@ export default function Cadastro() {
                 <Text style={{ color: params.condonome ? theme.text : "#888", flex: 1, fontSize: 14 }}>
                     {params.condonome || "Clique para localizar seu prédio"}
                 </Text>
-                <Ionicons name="business" size={18} color={params.condonome ? "#2d79f3" : "#555"} />
+                <Ionicons name="business" size={18} color={params.condonome ? COLORS.primary : "#555"} />
             </View>
           </TouchableOpacity>
 
@@ -82,7 +82,6 @@ export default function Cadastro() {
             <TextInput placeholder="Digite seu nome" placeholderTextColor="#888" style={[styles.textInput, { color: theme.text }]} />
           </View>
 
-          {/* NOVO CAMPO: CPF */}
           <Text style={[styles.inputLabel, { color: theme.label }]}>CPF</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
             <TextInput 
@@ -121,10 +120,10 @@ export default function Cadastro() {
           <TouchableOpacity 
             style={styles.mainButton} 
             onPress={() => router.push({
-              pathname: "/Sucesso",
+              pathname: "/sucesso",
               params: { 
                 mensagem: "Conta criada com sucesso! Faça seu login para entrar.",
-                proximaTela: "/Login" // Instrução para a tela de sucesso
+                proximaTela: "/login"
               }
             })}
           >
@@ -148,6 +147,6 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 10, fontWeight: "700", marginBottom: 8, letterSpacing: 1 },
   inputContainer: { borderWidth: 1.5, borderRadius: 12, height: 55, paddingHorizontal: 15, justifyContent: 'center', marginBottom: 15 },
   textInput: { flex: 1, fontSize: 14 },
-  mainButton: { backgroundColor: "#2d79f3", padding: 18, borderRadius: 15, alignItems: "center", marginTop: 20, elevation: 4 },
+  mainButton: { backgroundColor: COLORS.primary, padding: 18, borderRadius: 15, alignItems: "center", marginTop: 20, elevation: 4 },
   mainButtonText: { color: "white", fontWeight: "bold", letterSpacing: 1 },
 });

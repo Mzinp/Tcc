@@ -12,13 +12,15 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, router } from 'expo-router';
 import Navegacao from "@/components/Navegacao";
+import { COLORS } from "@/consts/colors";
 
 export default function Mensagens() {
   const [isDark, setIsDark] = useState(true);
 
   function handleRota(){
-    router.push('/TestChatGeral');
+    router.push('/(main)/(modal)/test-chat');
   }
+  
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
@@ -34,16 +36,15 @@ export default function Mensagens() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    card: isDark ? "#1a1d1d" : "#f5f5f5",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#252828" : "#eeeeee",
-    accent: "#2d79f3",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : "#f5f5f5",
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : "#666666",
+    border: isDark ? COLORS.dark.border : COLORS.light.border,
+    accent: COLORS.primary,
     whatsapp: "#25D366"
   };
 
-  // Função para simular abertura do WhatsApp
   const abrirWhats = (numero: string) => {
     const url = `whatsapp://send?phone=55${numero}`;
     Linking.openURL(url).catch(() => {
@@ -62,7 +63,6 @@ export default function Mensagens() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* SEÇÃO: CHAT GERAL DO CONDOMÍNIO */}
         <Text style={[styles.sectionTitle, { color: theme.subText }]}>COMUNIDADE</Text>
         <TouchableOpacity 
           style={[styles.mainChatCard, { backgroundColor: theme.accent }]}
@@ -81,7 +81,6 @@ export default function Mensagens() {
           </View>
         </TouchableOpacity>
 
-        {/* SEÇÃO: CONTATOS ÚTEIS (ESTILO WHATSAPP) */}
         <Text style={[styles.sectionTitle, { color: theme.subText, marginTop: 30 }]}>CONTATOS DIRETOS</Text>
         
         {[
@@ -90,7 +89,7 @@ export default function Mensagens() {
           { id: '3', nome: 'Zelador Marcos', cargo: 'Manutenção', icon: 'build', tel: '11977777777' },
         ].map((contato) => (
           <View key={contato.id} style={[styles.contactCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <View style={[styles.contactIcon, { backgroundColor: isDark ? "#252828" : "#e0e0e0" }]}>
+            <View style={[styles.contactIcon, { backgroundColor: isDark ? COLORS.dark.border : "#e0e0e0" }]}>
               <Ionicons name={contato.icon as any} size={24} color={theme.accent} />
             </View>
             
@@ -108,7 +107,6 @@ export default function Mensagens() {
           </View>
         ))}
 
-        {/* FEEDBACK DE SEGURANÇA */}
         <View style={styles.securityBox}>
             <Ionicons name="lock-closed" size={12} color={theme.subText} />
             <Text style={[styles.securityText, { color: theme.subText }]}>
@@ -139,14 +137,13 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 25, paddingBottom: 120 },
   sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
 
-  // Chat Geral Card
   mainChatCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 
     padding: 20, 
     borderRadius: 25,
     elevation: 8,
-    shadowColor: "#2d79f3",
+    shadowColor: COLORS.primary,
     shadowOpacity: 0.3,
     shadowRadius: 10
   },
@@ -154,10 +151,9 @@ const styles = StyleSheet.create({
   chatInfo: { flex: 1, marginLeft: 15 },
   chatName: { color: 'white', fontSize: 18, fontWeight: 'bold' },
   chatLastMsg: { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 2 },
-  badge: { backgroundColor: '#ff5252', width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#2d79f3' },
+  badge: { backgroundColor: '#ff5252', width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: COLORS.primary },
   badgeText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
 
-  // Contact Cards
   contactCard: { 
     flexDirection: 'row', 
     alignItems: 'center', 

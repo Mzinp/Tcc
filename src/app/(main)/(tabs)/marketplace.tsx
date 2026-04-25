@@ -4,17 +4,18 @@ import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Navegacao from "@/components/Navegacao";
 import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "@/consts/colors";
 
 const SERVICOS = [
-  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', cor: '#ff8c00', status: 'Ativo' },
-  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', cor: '#2d79f3', status: 'Ativo' },
-  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', cor: '#4caf50', status: 'Ativo' },
+  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', cor: COLORS.orange, status: 'Ativo' },
+  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', cor: COLORS.primary, status: 'Ativo' },
+  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', cor: COLORS.green, status: 'Ativo' },
 ];
 
 export default function Marketplace() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(true);
-  const [abaAtiva, setAbaAtiva] = useState('comprar'); // 'comprar' ou 'vender'
+  const [abaAtiva, setAbaAtiva] = useState('comprar');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -31,11 +32,11 @@ export default function Marketplace() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
-    card: isDark ? "#1a1d1d" : "#ffffff",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subtitle: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#252828" : "#dddddd",
+    bg: isDark ? COLORS.dark.bg : "#f5f5f5",
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subtitle: isDark ? COLORS.dark.subText : "#666666",
+    border: isDark ? COLORS.dark.border : "#dddddd",
   };
 
   return (
@@ -43,19 +44,18 @@ export default function Marketplace() {
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>Vizzo Marketplace</Text>
         
-        {/* SISTEMA DE ABAS */}
         <View style={[styles.tabBar, { backgroundColor: theme.card }]}>
           <TouchableOpacity 
             style={[styles.tab, abaAtiva === 'comprar' && styles.tabAtiva]} 
             onPress={() => setAbaAtiva('comprar')}
           >
-            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? '#2d79f3' : theme.subtitle }]}>CONTRATAR</Text>
+            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? COLORS.primary : theme.subtitle }]}>CONTRATAR</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tab, abaAtiva === 'vender' && styles.tabAtiva]} 
             onPress={() => setAbaAtiva('vender')}
           >
-            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? '#2d79f3' : theme.subtitle }]}>MEUS SERVIÇOS</Text>
+            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? COLORS.primary : theme.subtitle }]}>MEUS SERVIÇOS</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -74,7 +74,7 @@ export default function Marketplace() {
                 <Text style={[styles.serviceName, { color: theme.text }]}>{item.nome}</Text>
                 <Text style={[styles.provider, { color: theme.subtitle }]}>{item.prestador}</Text>
                 <View style={styles.badge}>
-                  <Ionicons name="checkmark-circle" size={12} color="#4caf50" />
+                  <Ionicons name="checkmark-circle" size={12} color={COLORS.green} />
                   <Text style={styles.badgeText}>DISPONÍVEL</Text>
                 </View>
                 <Text style={styles.price}>{item.preco}</Text>
@@ -83,7 +83,7 @@ export default function Marketplace() {
               <TouchableOpacity 
                 style={styles.hireBtn}
                 onPress={() => router.push({ 
-                  pathname: "/Sucesso", 
+                  pathname: "/(main)/(modal)/sucesso", 
                   params: { mensagem: "O vizinho foi avisado! Ele entrará em contato pelo chat." } 
                 })}
               >
@@ -93,7 +93,6 @@ export default function Marketplace() {
           )}
         />
       ) : (
-        /* ABA DE OFERECER SERVIÇO (VAZIA POR ENQUANTO) */
         <View style={styles.emptyContainer}>
           <Ionicons name="briefcase-outline" size={80} color={theme.border} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>Você ainda não oferece serviços</Text>
@@ -101,11 +100,10 @@ export default function Marketplace() {
         </View>
       )}
 
-      {/* BOTÃO FLUTUANTE PARA ANUNCIAR */}
       <TouchableOpacity 
         style={styles.fab}
         activeOpacity={0.9}
-        onPress={() => router.push("/NovoServico")} // Você pode criar essa tela depois
+        onPress={() => router.push("/(main)/(stack)/novo-servico")}
       >
         <Ionicons name="add" size={32} color="white" />
       </TouchableOpacity>
@@ -139,15 +137,15 @@ const styles = StyleSheet.create({
   serviceName: { fontWeight: 'bold', fontSize: 16 },
   provider: { fontSize: 12, marginBottom: 5 },
   badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(76, 175, 80, 0.1)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5, marginBottom: 5 },
-  badgeText: { color: '#4caf50', fontSize: 9, fontWeight: 'bold', marginLeft: 4 },
-  price: { color: '#2d79f3', fontWeight: 'bold', fontSize: 15 },
-  hireBtn: { backgroundColor: '#2d79f3', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
+  badgeText: { color: COLORS.green, fontSize: 9, fontWeight: 'bold', marginLeft: 4 },
+  price: { color: COLORS.primary, fontWeight: 'bold', fontSize: 15 },
+  hireBtn: { backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
   hireBtnText: { color: 'white', fontSize: 13, fontWeight: 'bold' },
   fab: { 
     position: 'absolute', 
     bottom: 100, 
     right: 25, 
-    backgroundColor: '#ff8c00', // Laranja para destacar
+    backgroundColor: COLORS.orange,
     width: 60, 
     height: 60, 
     borderRadius: 30, 

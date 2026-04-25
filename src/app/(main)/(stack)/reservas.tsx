@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "rea
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
 export default function Reservas() {
   const [isDark, setIsDark] = useState(true);
@@ -24,12 +25,12 @@ export default function Reservas() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff", // Branco Puro corrigido
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subtitle: isDark ? "#2d79f3" : "#1e5bb8",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subtitle: isDark ? COLORS.primary : "#1e5bb8",
     subText: isDark ? "#a0a0a0" : "#666666",
-    border: isDark ? "#252828" : "#eeeeee",
+    border: isDark ? COLORS.dark.border : COLORS.light.border,
   };
 
   const [areas, setAreas] = useState([
@@ -49,13 +50,13 @@ export default function Reservas() {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.topHeader}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
       </View>
       
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>Áreas de Lazer</Text>
         <View style={styles.badgeRow}>
-            <View style={[styles.roleBadge, { backgroundColor: userType === 'admin' ? "#2d79f3" : "#4caf50" }]}>
+            <View style={[styles.roleBadge, { backgroundColor: userType === 'admin' ? COLORS.primary : COLORS.green }]}>
                 <Text style={styles.roleText}>{userType === 'admin' ? "SÍNDICO" : "MORADOR"}</Text>
             </View>
             <Text style={[styles.subtitle, { color: theme.subtitle }]}>
@@ -68,14 +69,14 @@ export default function Reservas() {
         {areas.map((area) => (
           <View key={area.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <View style={styles.iconArea}>
-                 <Ionicons name={area.icon as any} size={24} color={area.disponivel ? "#2d79f3" : theme.subText} />
+                 <Ionicons name={area.icon as any} size={24} color={area.disponivel ? COLORS.primary : theme.subText} />
             </View>
 
             <View style={styles.info}>
               <Text style={[styles.areaName, { color: theme.text }]}>{area.nome}</Text>
               <View style={styles.statusRow}>
-                <View style={[styles.dot, { backgroundColor: area.disponivel ? '#4caf50' : '#f44336' }]} />
-                <Text style={[styles.status, { color: area.disponivel ? '#4caf50' : '#f44336' }]}>
+                <View style={[styles.dot, { backgroundColor: area.disponivel ? COLORS.green : COLORS.red }]} />
+                <Text style={[styles.status, { color: area.disponivel ? COLORS.green : COLORS.red }]}>
                   {area.disponivel ? "Livre para Uso" : "Indisponível"}
                 </Text>
               </View>
@@ -86,7 +87,7 @@ export default function Reservas() {
                 style={[styles.adminBtn, { backgroundColor: area.disponivel ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)' }]} 
                 onPress={() => alternarStatus(area.id)}
               >
-                <Text style={[styles.adminBtnText, { color: area.disponivel ? '#f44336' : '#4caf50' }]}>
+                <Text style={[styles.adminBtnText, { color: area.disponivel ? COLORS.red : COLORS.green }]}>
                   {area.disponivel ? "Bloquear" : "Liberar"}
                 </Text>
               </TouchableOpacity>
@@ -102,13 +103,12 @@ export default function Reservas() {
         ))}
       </ScrollView>
 
-      {/* Seletor de Teste (Switch) */}
       <View style={styles.testSwitcher}>
           <TouchableOpacity 
-            style={[styles.floatingTest, { backgroundColor: isDark ? '#1a1d1d' : '#f0f0f0' }]} 
+            style={[styles.floatingTest, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.input }]} 
             onPress={() => setUserType(userType === 'admin' ? 'user' : 'admin')}
           >
-            <Ionicons name="swap-horizontal" size={16} color="#2d79f3" />
+            <Ionicons name="swap-horizontal" size={16} color={COLORS.primary} />
             <Text style={{ fontSize: 10, color: theme.text, fontWeight: 'bold', marginLeft: 8 }}>
                MODO: {userType === 'admin' ? 'SÍNDICO' : 'MORADOR'}
             </Text>
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   status: { fontSize: 11, fontWeight: '700' },
   adminBtn: { paddingVertical: 10, paddingHorizontal: 15, borderRadius: 12 },
   adminBtnText: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
-  reservaBtn: { backgroundColor: '#2d79f3', paddingVertical: 10, paddingHorizontal: 15, borderRadius: 12 },
+  reservaBtn: { backgroundColor: COLORS.primary, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 12 },
   reservaBtnText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
   testSwitcher: { position: 'absolute', bottom: 40, width: '100%', alignItems: 'center' },
   floatingTest: { 
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     padding: 15, 
     borderRadius: 30, 
     borderWidth: 1,
-    borderColor: '#2d79f3',
+    borderColor: COLORS.primary,
     elevation: 5
   }
 });

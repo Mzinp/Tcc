@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Share } from "react-native";
-import QRCode from 'react-native-qrcode-svg'; // Precisa instalar: npx expo install react-native-qrcode-svg
+import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BotaoVoltar from "@/components/ArrowVoltar";
+import { COLORS } from "@/consts/colors";
+import ArrowBack from "@/components/ArrowVoltar";
 
 export default function MeuQRCode() {
   const [isDark, setIsDark] = useState(true);
   
-  // Simulando dados que viriam do perfil do usuário ou do banco
   const dadosUsuario = {
     id: "user_9921",
     nome: "Gustavo",
@@ -17,7 +17,6 @@ export default function MeuQRCode() {
     valor: "R$ 100,00"
   };
 
-  // Transformamos os dados em uma String para o QR Code
   const qrValor = JSON.stringify(dadosUsuario);
 
   useEffect(() => {
@@ -29,14 +28,13 @@ export default function MeuQRCode() {
   }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#252828" : "#eeeeee"
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    border: isDark ? COLORS.dark.border : COLORS.light.border
   };
 
-  // Função para compartilhar o código (Opcional, mas dá nota no TCC!)
   const onShare = async () => {
     try {
       await Share.share({
@@ -50,7 +48,7 @@ export default function MeuQRCode() {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
         <Text style={[styles.title, { color: theme.text }]}>Meu QR Code</Text>
       </View>
 
@@ -59,19 +57,18 @@ export default function MeuQRCode() {
           Apresente este código para que um vizinho possa contratar seu serviço instantaneamente.
         </Text>
 
-        {/* CARD DO QR CODE */}
         <View style={[styles.qrCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={styles.qrWrapper}>
             <QRCode
               value={qrValor}
               size={200}
-              color={isDark ? "#ffffff" : "#0f1111"}
+              color={isDark ? "#ffffff" : COLORS.light.text}
               backgroundColor="transparent"
             />
           </View>
           
           <Text style={[styles.userName, { color: theme.text }]}>{dadosUsuario.nome}</Text>
-          <Text style={[styles.userApto, { color: "#2d79f3" }]}>{dadosUsuario.apto}</Text>
+          <Text style={[styles.userApto, { color: COLORS.primary }]}>{dadosUsuario.apto}</Text>
           
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           
@@ -113,7 +110,7 @@ const styles = StyleSheet.create({
   serviceName: { fontSize: 16, fontWeight: 'bold', marginTop: 5 },
   shareBtn: { 
     flexDirection: 'row', 
-    backgroundColor: '#2d79f3', 
+    backgroundColor: COLORS.primary, 
     padding: 18, 
     borderRadius: 15, 
     marginTop: 40, 

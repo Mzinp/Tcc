@@ -4,12 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, router } from 'expo-router';
 import Navegacao from "@/components/Navegacao";
+import { COLORS } from "@/consts/colors";
 
 const { width } = Dimensions.get('window');
 
 export default function Perfil() {
   const [isDark, setIsDark] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false); // Estado para abrir o QR Code
+  const [modalVisible, setModalVisible] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -30,27 +31,26 @@ export default function Perfil() {
   };
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    border: isDark ? "#1a1d1d" : "#f0f0f0",
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    border: isDark ? "#1a1d1d" : COLORS.light.border,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View style={[styles.avatarBorder, { borderColor: "#2d79f3" }]}>
+          <View style={[styles.avatarBorder, { borderColor: COLORS.primary }]}>
             <Image source={{ uri: 'https://github.com/gustavosilva.png' }} style={styles.avatar} />
           </View>
           <Text style={[styles.userName, { color: theme.text }]}>Gustavo Silva</Text>
           <Text style={[styles.userInfo, { color: theme.subText }]}>Bloco A - Apto 52</Text>
 
-          {/* BOTÃO DO QR CODE CORRIGIDO - AGORA ABRE O MODAL */}
           <TouchableOpacity 
-            style={[styles.qrShortcut, { backgroundColor: isDark ? theme.card : "#2d79f3" }]}
-            onPress={() => setModalVisible(true)} // Abre a janelinha
+            style={[styles.qrShortcut, { backgroundColor: isDark ? theme.card : COLORS.primary }]}
+            onPress={() => setModalVisible(true)}
             activeOpacity={0.8}
           >
             <Ionicons name="qr-code" size={20} color="white" />
@@ -71,7 +71,7 @@ export default function Perfil() {
               activeOpacity={0.7}
             >
               <View style={styles.menuLeft}>
-                <Ionicons name={item.icon as any} size={22} color="#2d79f3" />
+                <Ionicons name={item.icon as any} size={22} color={COLORS.primary} />
                 <Text style={[styles.menuLabel, { color: theme.text }]}>{item.label}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={isDark ? "#353838" : "#ccc"} />
@@ -88,7 +88,6 @@ export default function Perfil() {
         </View>
       </ScrollView>
 
-      {/* JANELA DO QR CODE (Aparece por cima) */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -100,7 +99,7 @@ export default function Perfil() {
             activeOpacity={1} 
             onPress={() => setModalVisible(false)}
         >
-          <View style={[styles.modalContent, { backgroundColor: isDark ? "#1a1d1d" : "#ffffff" }]}>
+          <View style={[styles.modalContent, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.bg }]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>Acesso Vizzo</Text>
             
             <View style={styles.qrArea}>
@@ -154,9 +153,8 @@ const styles = StyleSheet.create({
   menuLeft: { flexDirection: 'row', alignItems: 'center' },
   menuLabel: { marginLeft: 15, fontSize: 16 },
   logoutBtn: { marginTop: 40, alignItems: 'center', paddingBottom: 20 },
-  logoutText: { color: '#f44336', fontWeight: 'bold', letterSpacing: 1 },
+  logoutText: { color: COLORS.red, fontWeight: 'bold', letterSpacing: 1 },
 
-  // Estilos do Modal corrigido
   modalOverlay: { 
     flex: 1, 
     backgroundColor: 'rgba(0,0,0,0.8)', 
@@ -174,5 +172,5 @@ const styles = StyleSheet.create({
   qrArea: { padding: 15, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20 },
   modalInfo: { fontSize: 12, marginTop: 20, fontWeight: '600' },
   closeBtn: { marginTop: 30, padding: 10 },
-  closeBtnText: { color: '#2d79f3', fontWeight: 'bold', letterSpacing: 1 }
+  closeBtnText: { color: COLORS.primary, fontWeight: 'bold', letterSpacing: 1 }
 });

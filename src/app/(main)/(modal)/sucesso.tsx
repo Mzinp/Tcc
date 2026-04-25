@@ -3,14 +3,15 @@ import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS } from "@/consts/colors";
 
 export default function Sucesso() {
-  const { mensagem, proximaTela } = useLocalSearchParams(); // Pegando a rota dinâmica
+  const { mensagem, proximaTela } = useLocalSearchParams();
   const [isDark, setIsDark] = useState(true);
   
   const scaleValue = useRef(new Animated.Value(0)).current;
   const opacityValue = useRef(new Animated.Value(0)).current;
-  const progressValue = useRef(new Animated.Value(0)).current; // Para a barra de progresso
+  const progressValue = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -27,7 +28,6 @@ export default function Sucesso() {
   );
 
   useEffect(() => {
-    // 1. Animações de entrada
     Animated.parallel([
       Animated.spring(scaleValue, {
         toValue: 1,
@@ -39,18 +39,16 @@ export default function Sucesso() {
         duration: 500,
         useNativeDriver: true,
       }),
-      // 2. Animação da barra de progresso (enchendo em 3 segundos)
       Animated.timing(progressValue, {
         toValue: 1,
         duration: 3000,
         easing: Easing.linear,
-        useNativeDriver: false, // width não suporta native driver
+        useNativeDriver: false,
       })
     ]).start();
 
-    // 3. Redirecionamento inteligente
     const timer = setTimeout(() => {
-      const destino = (proximaTela as string) || "/home";
+      const destino = (proximaTela as string) || "/(main)/(tabs)/home";
       router.replace(destino as any);
     }, 3500);
 
@@ -58,13 +56,12 @@ export default function Sucesso() {
   }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    text: isDark ? "white" : "#0f1111",
-    subtitle: isDark ? "#8b8e98" : "#666666",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    text: isDark ? "white" : COLORS.light.text,
+    subtitle: isDark ? COLORS.dark.subText : "#666666",
     footer: isDark ? "#353838" : "#aaaaaa"
   };
 
-  // Interpolação para a largura da barra
   const progressWidth = progressValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%']
@@ -78,7 +75,7 @@ export default function Sucesso() {
         { 
           transform: [{ scale: scaleValue }], 
           opacity: opacityValue,
-          shadowColor: "#4caf50",
+          shadowColor: COLORS.green,
         }
       ]}>
         <View style={styles.whiteRing}>
@@ -96,9 +93,9 @@ export default function Sucesso() {
       
       <View style={styles.loaderContainer}>
          <Text style={[styles.footer, { color: theme.footer }]}>
-            {proximaTela === "/Login" ? "INDO PARA O LOGIN" : "VOLTANDO PARA A HOME"}
+            {proximaTela === "/login" ? "INDO PARA O LOGIN" : "VOLTANDO PARA A HOME"}
          </Text>
-         <View style={[styles.progressBar, { backgroundColor: isDark ? '#1a1d1d' : '#f0f0f0' }]}>
+         <View style={[styles.progressBar, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.input }]}>
             <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
          </View>
       </View>
@@ -110,7 +107,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   iconCircle: { 
     width: 140, height: 140, borderRadius: 70, 
-    backgroundColor: '#4caf50', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: COLORS.green, justifyContent: 'center', alignItems: 'center',
     marginBottom: 40, elevation: 15, shadowOpacity: 0.3, shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 }
   },
@@ -119,10 +116,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center'
   },
   title: { fontSize: 32, fontWeight: 'bold', letterSpacing: -1 },
-  divider: { width: 40, height: 4, backgroundColor: '#4caf50', borderRadius: 2, marginVertical: 15 },
+  divider: { width: 40, height: 4, backgroundColor: COLORS.green, borderRadius: 2, marginVertical: 15 },
   subtitle: { fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 10 },
   loaderContainer: { position: 'absolute', bottom: 60, alignItems: 'center', width: '100%' },
   footer: { fontSize: 10, letterSpacing: 2, fontWeight: '800', marginBottom: 15 },
   progressBar: { width: 150, height: 6, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#4caf50' }
+  progressFill: { height: '100%', backgroundColor: COLORS.green }
 });

@@ -3,12 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, usePathname, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS } from "@/consts/colors";
 
 export default function Navegacao() {
   const pathname = usePathname();
-  const [isDark, setIsDark] = useState<boolean | null>(null); // null evita o flash de cor errada
+  const [isDark, setIsDark] = useState<boolean | null>(null);
 
-  // Sincroniza o tema da barra
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
@@ -24,27 +24,25 @@ export default function Navegacao() {
   );
 
   const theme = {
-    bg: isDark ? "#1a1d1d" : "#ffffff",
-    border: isDark ? "#252828" : "#f0f0f0",
-    inactive: isDark ? "#8b8e98" : "#999999",
-    active: "#2d79f3" 
+    bg: isDark ? COLORS.dark.card : "#ffffff",
+    border: isDark ? COLORS.dark.border : "#f0f0f0",
+    inactive: isDark ? COLORS.dark.subText : "#999999",
+    active: COLORS.primary 
   };
 
-  // Novo item "Chat" adicionado
   const menuItems = [
-    { name: "Início", icon: "home", route: "/home" },
-    { name: "Mercado", icon: "cart", route: "/Marketplace" },
-    { name: "Chat", icon: "chatbubbles", route: "/Mensagens" }, // Nova Rota
-    { name: "Perfil", icon: "person", route: "/Perfil" }, 
+    { name: "Início", icon: "home", route: "/(main)/(tabs)/home" },
+    { name: "Mercado", icon: "cart", route: "/(main)/(tabs)/marketplace" },
+    { name: "Chat", icon: "chatbubbles", route: "/(main)/(tabs)/mensagens" },
+    { name: "Perfil", icon: "person", route: "/(main)/(tabs)/perfil" }, 
   ];
 
-  // Se o tema ainda não carregou, não renderiza para não dar "lag" visual
   if (isDark === null) return null;
 
   return (
     <View style={[styles.navBar, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
       {menuItems.map((item) => {
-        const isActive = pathname === item.route;
+        const isActive = pathname.includes(item.route.split('/').pop() || '');
         
         return (
           <TouchableOpacity 
@@ -71,7 +69,7 @@ export default function Navegacao() {
 const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
-    height: 70, // Reduzi um pouco para ficar mais elegante com 4 itens
+    height: 70,
     borderTopWidth: 1,
     justifyContent: "space-around",
     alignItems: "center",

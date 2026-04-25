@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity, Image } 
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BotaoVoltar from "@/components/ArrowVoltar";
+import { COLORS } from "@/consts/colors";
+import ArrowBack from "@/components/ArrowVoltar";
 
-// Dados simulados para o seu TCC
 const CONDOMINIOS = [
   { id: '1', nome: 'Residencial Solar das Flores', cidade: 'São Paulo, SP', endereco: 'Rua das Palmeiras, 120', imagem: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=100&q=80' },
   { id: '2', nome: 'Edifício Horizonte Azul', cidade: 'Santo André, SP', endereco: 'Av. Portugal, 450', imagem: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=100&q=80' },
@@ -17,7 +17,6 @@ export default function LocalizarCondominio() {
   const [isDark, setIsDark] = useState(true);
   const [busca, setBusca] = useState('');
   
-  // Filtra a lista conforme o usuário digita
   const listaFiltrada = CONDOMINIOS.filter(c => 
     c.nome.toLowerCase().includes(busca.toLowerCase()) || 
     c.cidade.toLowerCase().includes(busca.toLowerCase())
@@ -32,25 +31,25 @@ export default function LocalizarCondominio() {
   }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    card: isDark ? "#1a1d1d" : "#f9f9f9",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
     input: isDark ? "#252828" : "#f0f0f0",
     border: isDark ? "#252828" : "#eeeeee"
   };
 
-const selecionarCondominio = (nome: string) => {
-  router.push({
-    pathname: "/Cadastro",
-    params: { condonome: nome }
-  });
-};
+  const selecionarCondominio = (nome: string) => {
+    router.push({
+      pathname: "/(auth)/cadastro",
+      params: { condonome: nome }
+    });
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
         <Text style={[styles.title, { color: theme.text }]}>Localizar Condomínio</Text>
       </View>
 
@@ -79,7 +78,7 @@ const selecionarCondominio = (nome: string) => {
             <Image source={{ uri: item.imagem }} style={styles.condoImage} />
             <View style={styles.condoInfo}>
               <Text style={[styles.condoName, { color: theme.text }]}>{item.nome}</Text>
-              <Text style={[styles.condoCity, { color: "#2d79f3" }]}>{item.cidade}</Text>
+              <Text style={[styles.condoCity, { color: COLORS.primary }]}>{item.cidade}</Text>
               <Text style={[styles.condoAddr, { color: theme.subText }]}>{item.endereco}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.subText} />

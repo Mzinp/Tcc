@@ -12,9 +12,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import BotaoVoltar from '@/components/ArrowVoltar';
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
-// Mensagens fakes para popular o chat do condomínio
 const MENSAGENS_INICIAIS = [
   { id: '1', usuario: 'Mateus', apto: '202', texto: 'Alguém sabe se a piscina está aberta hoje?', eu: false, hora: '14:20' },
   { id: '2', usuario: 'Você', apto: '102', texto: 'Acredito que sim, vi o zelador limpando hoje cedo.', eu: true, hora: '14:22' },
@@ -41,13 +41,13 @@ export default function TestChatGeral() {
   );
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#ffffff",
-    header: isDark ? "#1a1d1d" : "#f9f9f9",
-    text: isDark ? "#ffffff" : "#0f1111",
-    subText: isDark ? "#8b8e98" : "#666666",
-    bubbleEu: "#2d79f3",
-    bubbleOutro: isDark ? "#252828" : "#f0f0f0",
-    inputBg: isDark ? "#1a1d1d" : "#f5f5f5",
+    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    header: isDark ? COLORS.dark.card : "#f9f9f9",
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
+    subText: isDark ? COLORS.dark.subText : "#666666",
+    bubbleEu: COLORS.primary,
+    bubbleOutro: isDark ? COLORS.dark.border : "#f0f0f0",
+    inputBg: isDark ? COLORS.dark.card : "#f5f5f5",
   };
 
   return (
@@ -56,19 +56,17 @@ export default function TestChatGeral() {
       style={[styles.container, { backgroundColor: theme.bg }]}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
-      {/* HEADER DO CHAT */}
-      <View style={[styles.header, { backgroundColor: theme.header, borderBottomColor: isDark ? "#252828" : "#eee" }]}>
-        <BotaoVoltar cor={theme.text} />
+      <View style={[styles.header, { backgroundColor: theme.header, borderBottomColor: isDark ? COLORS.dark.border : "#eee" }]}>
+        <ArrowBack cor={theme.text} />
         <View style={styles.headerInfo}>
           <Text style={[styles.chatTitle, { color: theme.text }]}>Chat Geral Vizzo</Text>
-          <Text style={[styles.chatStatus, { color: "#4caf50" }]}>● 14 vizinhos online</Text>
+          <Text style={[styles.chatStatus, { color: COLORS.green }]}>● 14 vizinhos online</Text>
         </View>
         <TouchableOpacity>
           <Ionicons name="information-circle-outline" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
 
-      {/* ÁREA DE MENSAGENS */}
       <ScrollView 
         ref={scrollViewRef}
         contentContainerStyle={styles.chatArea}
@@ -103,8 +101,7 @@ export default function TestChatGeral() {
         ))}
       </ScrollView>
 
-      {/* BARRA DE INPUT */}
-      <View style={[styles.inputBar, { backgroundColor: theme.header, borderTopColor: isDark ? "#252828" : "#eee" }]}>
+      <View style={[styles.inputBar, { backgroundColor: theme.header, borderTopColor: isDark ? COLORS.dark.border : "#eee" }]}>
         <TouchableOpacity style={styles.attachBtn}>
           <Ionicons name="add-circle-outline" size={28} color={theme.bubbleEu} />
         </TouchableOpacity>

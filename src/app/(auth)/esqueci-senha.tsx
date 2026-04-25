@@ -1,6 +1,5 @@
-import BotaoVoltar from '@/components/ArrowVoltar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -12,31 +11,30 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { COLORS } from "@/consts/colors";
+import ArrowBack from '@/components/ArrowVoltar';
 
-export default function EsqueceuSenha() {
+export default function EsqueciSenha() {
   const [isDark, setIsDark] = useState(true);
 
-  // Carrega o tema definido no Cadastro
-  useFocusEffect(
-    React.useCallback(() => {
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema");
-        }
-      };
-      carregarTema();
-    }, [])
-  );
+  React.useEffect(() => {
+    const carregarTema = async () => {
+      try {
+        const salvo = await AsyncStorage.getItem('@vizzo_theme');
+        if (salvo !== null) setIsDark(salvo === 'dark');
+      } catch (e) {
+        console.log("Erro ao carregar tema");
+      }
+    };
+    carregarTema();
+  }, []);
 
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
-    card: isDark ? "#1a1d1d" : "#ffffff",
+    bg: isDark ? COLORS.dark.bg : "#f5f5f5",
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
     input: isDark ? "#252828" : "#f0f0f0",
     border: isDark ? "#353838" : "#dddddd",
-    text: isDark ? "#ffffff" : "#0f1111",
+    text: isDark ? COLORS.dark.text : COLORS.light.text,
     label: isDark ? "#e0e0e0" : "#666666"
   };
 
@@ -45,9 +43,8 @@ export default function EsqueceuSenha() {
       behavior={Platform.OS === "ios" ? "padding" : "height"} 
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
-      {/* Header limpo, apenas com o botão de voltar */}
       <View style={styles.header}>
-        <BotaoVoltar cor={theme.text} />
+        <ArrowBack cor={theme.text} />
       </View>
 
       <ScrollView contentContainerStyle={styles.centerContent}>
@@ -72,7 +69,7 @@ export default function EsqueceuSenha() {
           <TouchableOpacity 
             style={styles.mainButton}
             onPress={() => router.push({
-              pathname: "/Sucesso",
+              pathname: "/sucesso",
               params: { mensagem: "Verifique seu e-mail! Enviamos as instruções de recuperação." }
             })}
           >
@@ -98,7 +95,7 @@ const styles = StyleSheet.create({
     padding: 35,
     borderRadius: 20,
     borderTopWidth: 6,
-    borderTopColor: "#ff8c00",
+    borderTopColor: COLORS.orange,
     borderWidth: 1,
     elevation: 10,
     shadowColor: "#000",
@@ -132,7 +129,7 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   mainButton: {
-    backgroundColor: "#2d79f3",
+    backgroundColor: COLORS.primary,
     padding: 18,
     borderRadius: 12,
     alignItems: "center",
