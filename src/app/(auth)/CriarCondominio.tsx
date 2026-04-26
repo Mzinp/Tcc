@@ -1,17 +1,18 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  ActivityIndicator
 } from "react-native";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export default function CriarCondominio() {
   const router = useRouter();
@@ -28,16 +29,13 @@ export default function CriarCondominio() {
   const [cidade, setCidade] = useState("");
   const [estado, setEstado] = useState("");
 
-  // Função para buscar CEP (ViaCEP)
   async function buscarCep(valor: string) {
     const cepLimpo = valor.replace(/\D/g, "");
     setCep(cepLimpo);
 
     if (cepLimpo.length === 8) {
       try {
-        const response = await fetch(
-          `https://viacep.com.br/ws/${cepLimpo}/json/`,
-        );
+        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
         const data = await response.json();
 
         if (data.erro) {
@@ -61,54 +59,70 @@ export default function CriarCondominio() {
       return;
     }
 
-    // 1. Pegar o ID do usuário que está logado agora (o Admin que acabou de cadastrar)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    setLoading(true);
 
-    if (!user) {
-      Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
-      return;
-    }
+    try {
+      // 1. Pegar o ID do usuário logado
+      const { data: { user } } = await supabase.auth.getUser();
 
-    // 2. Criar o condomínio
-    const { data: condoData, error: condoError } = await supabase
-      .from("tb_condominio")
-      .insert([
-        {
-          nome_condominio: nome,
-          cnpj,
-          cep,
-          logradouro,
-          numero,
-          complemento,
-          bairro,
-          cidade,
-          estado,
-        },
-      ])
-      .select()
-      .single();
+      if (!user) {
+        Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
+        router.replace("/(auth)/Login");
+        return;
+      }
 
-    if (condoError) {
-      Alert.alert("Erro ao criar condomínio", condoError.message);
-      return;
-    }
+      // 2. Criar o condomínio e OBTER os dados gerados pelo banco
+      const { data: condoData, error: condoError } = await supabase
+        .from("tb_condominio")
+        .insert([
+          {
+            nome_condominio: nome,
+            cnpj: cnpj.replace(/\D/g, ""), // Limpa o CNPJ antes de salvar
+            cep: cep.replace(/\D/g, ""),
+            logradouro,
+            numero,
+            complemento,
+            bairro,
+            cidade,
+            estado,
+          },
+        ])
+        .select() // ESSENCIAL: Faz o Supabase retornar o código gerado
+        .single();
 
-    // 3. VÍNCULO DE SEGURANÇA: Atualizar o cadastro do Admin com o ID do prédio novo
-    const { error: updateError } = await supabase
-      .from("tb_administrador")
-      .update({ id_condominio: condoData.id_condominio })
-      .eq("id_administrador", user.id);
+      if (condoError) {
+        throw new Error(condoError.message);
+      }
 
-    if (updateError) {
-      Alert.alert("Erro ao vincular administrador", updateError.message);
-    } else {
-      Alert.alert(
-        "🏢 Tudo Pronto!",
-        `Condomínio registrado com sucesso!\n\nCódigo de Acesso: ${condoData.codigo_acesso}`,
-        [{ text: "Ir para o Início", onPress: () => router.replace("/Login") }],
-      );
+      // 3. VÍNCULO: Atualizar o administrador com o novo UUID do condomínio
+      if (condoData) {
+        const { error: updateError } = await supabase
+          .from("tb_administrador")
+          .update({ id_condominio: condoData.id_condominio })
+          .eq("id_administrador", user.id);
+
+        if (updateError) {
+          console.error("Erro ao vincular:", updateError.message);
+          // Mesmo com erro no vínculo, o condomínio foi criado, então seguimos.
+        }
+
+        // 4. Sucesso! Navega passando o código REAL retornado pelo banco
+        router.replace({
+          pathname: "/(main)/(modal)/sucesso",
+          params: { 
+            mensagem: `Condomínio registrado!\nCódigo dos moradores: ${condoData.codigo_acesso}`,
+            proximaTela: "/(auth)/Login" 
+          }
+        });
+        
+        // Desloga por segurança para forçar o login com o novo vínculo
+        await supabase.auth.signOut();
+      }
+
+    } catch (error: any) {
+      Alert.alert("Erro ao salvar", error.message || "Ocorreu um erro inesperado.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -206,13 +220,15 @@ export default function CriarCondominio() {
           </View>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, loading && { opacity: 0.7 }]}
             onPress={handleSalvarCondominio}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>
-              {loading ? "SALVANDO..." : "CRIAR CONDOMÍNIO"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>CRIAR CONDOMÍNIO</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>

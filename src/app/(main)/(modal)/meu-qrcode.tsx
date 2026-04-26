@@ -1,31 +1,68 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Share } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Share, ActivityIndicator } from "react-native";
 import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from "@/lib/supabase"; 
 import { COLORS } from "@/consts/colors";
 import ArrowBack from "@/components/ArrowVoltar";
 
 export default function MeuQRCode() {
   const [isDark, setIsDark] = useState(true);
-  
-  const dadosUsuario = {
-    id: "user_9921",
-    nome: "Gustavo",
-    apto: "Apto 102 - Bloco B",
-    servico: "Manutenção de Computadores",
-    valor: "R$ 100,00"
-  };
-
-  const qrValor = JSON.stringify(dadosUsuario);
+  const [loading, setLoading] = useState(true);
+  const [serviçoAtivo, setServiçoAtivo] = useState<any>(null);
+  const [nomeUsuario, setNomeUsuario] = useState("");
 
   useEffect(() => {
-    const carregarTema = async () => {
+    carregarDados();
+  }, []);
+
+  async function carregarDados() {
+    try {
+      setLoading(true);
+      
+      // 1. Carregar Tema
       const salvo = await AsyncStorage.getItem('@vizzo_theme');
       if (salvo !== null) setIsDark(salvo === 'dark');
-    };
-    carregarTema();
-  }, []);
+
+      // 2. Pegar Usuário Logado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 3. Buscar Nome do Morador
+      const { data: morador } = await supabase
+        .from("tb_morador")
+        .select("nome_morador, bloco, num_apartamento")
+        .eq("id_morador", user.id)
+        .single();
+
+      if (morador) setNomeUsuario(morador.nome_morador);
+
+      // 4. Buscar o Serviço mais recente deste morador
+      const { data: servico } = await supabase
+        .from("tb_servico")
+        .select("*")
+        .eq("id_morador", user.id)
+        .eq("status_servico", "Ativo")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (servico) {
+        setServiçoAtivo({
+          id: servico.id_servico,
+          nome: morador?.nome_morador || "Usuário",
+          apto: `Bloco ${morador?.bloco} - Apt ${morador?.num_apartamento}`,
+          servico: servico.nome_servico,
+          valor: `R$ ${servico.valor_estimado}`
+        });
+      }
+    } catch (error) {
+      console.log("Erro ao carregar QR Code:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const theme = {
     bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
@@ -36,14 +73,23 @@ export default function MeuQRCode() {
   };
 
   const onShare = async () => {
+    if (!serviçoAtivo) return;
     try {
       await Share.share({
-        message: `Olá! Este é meu perfil de prestador no Vizzo para o serviço: ${dadosUsuario.servico}.`,
+        message: `Vizzo Marketplace: Confira meu serviço de ${serviçoAtivo.servico}. Escaneie meu QR Code no app!`,
       });
     } catch (error) {
       console.log((error as Error).message);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: theme.bg, justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -57,29 +103,39 @@ export default function MeuQRCode() {
           Apresente este código para que um vizinho possa contratar seu serviço instantaneamente.
         </Text>
 
-        <View style={[styles.qrCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-          <View style={styles.qrWrapper}>
-            <QRCode
-              value={qrValor}
-              size={200}
-              color={isDark ? "#ffffff" : COLORS.light.text}
-              backgroundColor="transparent"
-            />
+        {serviçoAtivo ? (
+          <View style={[styles.qrCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View style={styles.qrWrapper}>
+              <QRCode
+                value={JSON.stringify({ id_servico: serviçoAtivo.id, prestador: serviçoAtivo.nome })}
+                size={200}
+                color="black"
+                backgroundColor="white"
+              />
+            </View>
+            
+            <Text style={[styles.userName, { color: theme.text }]}>{serviçoAtivo.nome}</Text>
+            <Text style={[styles.userApto, { color: COLORS.primary }]}>{serviçoAtivo.apto}</Text>
+            
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            
+            <Text style={[styles.serviceTitle, { color: theme.subText }]}>SERVIÇO OFERECIDO</Text>
+            <Text style={[styles.serviceName, { color: theme.text }]}>{serviçoAtivo.servico}</Text>
           </View>
-          
-          <Text style={[styles.userName, { color: theme.text }]}>{dadosUsuario.nome}</Text>
-          <Text style={[styles.userApto, { color: COLORS.primary }]}>{dadosUsuario.apto}</Text>
-          
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
-          
-          <Text style={[styles.serviceTitle, { color: theme.subText }]}>SERVIÇO OFERECIDO</Text>
-          <Text style={[styles.serviceName, { color: theme.text }]}>{dadosUsuario.servico}</Text>
-        </View>
+        ) : (
+          <View style={[styles.qrCard, { backgroundColor: theme.card, borderColor: theme.border, padding: 40 }]}>
+            <Ionicons name="alert-circle-outline" size={50} color={COLORS.orange} />
+            <Text style={[styles.userName, { color: theme.text, textAlign: 'center', marginTop: 10 }]}>Nenhum serviço ativo</Text>
+            <Text style={[styles.infoText, { color: theme.subText, marginTop: 10 }]}>Você precisa cadastrar um serviço no Marketplace para gerar seu QR Code.</Text>
+          </View>
+        )}
 
-        <TouchableOpacity style={styles.shareBtn} onPress={onShare}>
-          <Ionicons name="share-social-outline" size={20} color="white" />
-          <Text style={styles.shareText}>Compartilhar Perfil</Text>
-        </TouchableOpacity>
+        {serviçoAtivo && (
+          <TouchableOpacity style={styles.shareBtn} onPress={onShare}>
+            <Ionicons name="share-social-outline" size={20} color="white" />
+            <Text style={styles.shareText}>Compartilhar Perfil</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );

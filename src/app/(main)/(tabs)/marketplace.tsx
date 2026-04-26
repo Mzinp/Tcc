@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Animated } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Navegacao from "@/components/Navegacao";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/consts/colors";
 
@@ -100,6 +99,7 @@ export default function Marketplace() {
         </View>
       )}
 
+      {/* Botão Flutuante (FAB) */}
       <TouchableOpacity 
         style={styles.fab}
         activeOpacity={0.9}
@@ -107,8 +107,6 @@ export default function Marketplace() {
       >
         <Ionicons name="add" size={32} color="white" />
       </TouchableOpacity>
-
-      <Navegacao />
     </View>
   );
 }
@@ -143,7 +141,7 @@ const styles = StyleSheet.create({
   hireBtnText: { color: 'white', fontSize: 13, fontWeight: 'bold' },
   fab: { 
     position: 'absolute', 
-    bottom: 100, 
+    bottom: 30, // Ajustado para ficar visível acima da área das tabs
     right: 25, 
     backgroundColor: COLORS.orange,
     width: 60, 

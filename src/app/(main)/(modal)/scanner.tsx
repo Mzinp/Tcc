@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { router } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "@/consts/colors";
 import ArrowBack from "@/components/ArrowVoltar";
 
@@ -12,16 +11,16 @@ export default function Scanner() {
 
   useEffect(() => {
     if (!permission) requestPermission();
-  }, []);
+  }, [permission]);
 
   if (!permission) {
-    return <View style={styles.container}><Text>Solicitando permissão de câmera...</Text></View>;
+    return <View style={styles.container}><Text style={{color: 'white'}}>Solicitando permissão...</Text></View>;
   }
 
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Precisamos de acesso à câmera para ler o QR Code.</Text>
+        <Text style={styles.text}>Precisamos de acesso à câmera para ler o QR Code do Vizzo.</Text>
         <TouchableOpacity style={styles.btn} onPress={requestPermission}>
           <Text style={styles.btnText}>Conceder Permissão</Text>
         </TouchableOpacity>
@@ -31,10 +30,27 @@ export default function Scanner() {
 
   const handleBarcodeScanned = ({ data }: { data: string }) => {
     setScanned(true);
-    router.push({
-      pathname: "/sucesso",
-      params: { mensagem: `Serviço detectado: ${data}. Notificação enviada ao vizinho!` }
-    });
+    
+    try {
+      // Tenta transformar o texto do QR em um objeto (JSON)
+      const parsedData = JSON.parse(data);
+
+      // Verifica se é um QR Code do nosso sistema (se tem o id_servico)
+      if (parsedData.id_servico) {
+        router.push({
+          pathname: "/(main)/(modal)/sucesso",
+          params: { mensagem: `Serviço de ${parsedData.prestador} detectado! A solicitação foi enviada.` }
+        });
+      } else {
+        throw new Error("QR Code inválido");
+      }
+    } catch (e) {
+      Alert.alert(
+        "Código Inválido",
+        "Este QR Code não pertence ao sistema Vizzo.",
+        [{ text: "OK", onPress: () => setScanned(false) }]
+      );
+    }
   };
 
   return (
@@ -47,6 +63,7 @@ export default function Scanner() {
         }}
       />
       
+      {/* Overlay de foco */}
       <View style={styles.overlay}>
         <View style={styles.unfocusedContainer}></View>
         <View style={styles.middleContainer}>

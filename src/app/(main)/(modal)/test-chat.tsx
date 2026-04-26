@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -7,38 +7,77 @@ import {
   TextInput, 
   TouchableOpacity, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  ActivityIndicator 
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
+import { supabase } from "@/lib/supabase"; 
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
-
-const MENSAGENS_INICIAIS = [
-  { id: '1', usuario: 'Mateus', apto: '202', texto: 'Alguém sabe se a piscina está aberta hoje?', eu: false, hora: '14:20' },
-  { id: '2', usuario: 'Você', apto: '102', texto: 'Acredito que sim, vi o zelador limpando hoje cedo.', eu: true, hora: '14:22' },
-  { id: '3', usuario: 'Dra. Ana', apto: '501', texto: 'O síndico avisou no mural que a manutenção acabou!', eu: false, hora: '14:25' },
-];
 
 export default function TestChatGeral() {
   const [isDark, setIsDark] = useState(true);
   const [mensagem, setMensagem] = useState("");
+  const [mensagens, setMensagens] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Limite de caracteres para segurança
+  const LIMITE_CARACTERES = 500;
 
   useFocusEffect(
     React.useCallback(() => {
       const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema");
-        }
+        const salvo = await AsyncStorage.getItem('@vizzo_theme');
+        if (salvo !== null) setIsDark(salvo === 'dark');
       };
       carregarTema();
+      obterSessao();
     }, [])
   );
+
+  useEffect(() => {
+    buscarMensagens();
+
+    const channel = supabase
+      .channel('chat_condominio')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tb_chat' }, 
+        (payload) => {
+          setMensagens((prev) => [...prev, payload.new]);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  async function obterSessao() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setUserId(user.id);
+  }
+
+  async function buscarMensagens() {
+    const { data } = await supabase.from('tb_chat').select('*').order('created_at', { ascending: true });
+    if (data) setMensagens(data);
+    setLoading(false);
+  }
+
+  async function enviarMensagem() {
+    // Validação extra de segurança: não envia se estiver vazio ou passar do limite
+    if (!mensagem.trim() || mensagem.length > LIMITE_CARACTERES || !userId) return;
+
+    const { error } = await supabase.from('tb_chat').insert([{
+      id_autor: userId,
+      texto: mensagem.trim(),
+      nome_autor: "Vizinho",
+      apto_autor: "Vizzo"
+    }]);
+
+    if (!error) setMensagem("");
+  }
 
   const theme = {
     bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
@@ -60,64 +99,57 @@ export default function TestChatGeral() {
         <ArrowBack cor={theme.text} />
         <View style={styles.headerInfo}>
           <Text style={[styles.chatTitle, { color: theme.text }]}>Chat Geral Vizzo</Text>
-          <Text style={[styles.chatStatus, { color: COLORS.green }]}>● 14 vizinhos online</Text>
+          <Text style={[styles.chatStatus, { color: COLORS.green }]}>● Realtime Ativo</Text>
         </View>
-        <TouchableOpacity>
-          <Ionicons name="information-circle-outline" size={24} color={theme.text} />
-        </TouchableOpacity>
+        <Ionicons name="information-circle-outline" size={24} color={theme.text} />
       </View>
 
-      <ScrollView 
-        ref={scrollViewRef}
-        contentContainerStyle={styles.chatArea}
-        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-      >
-        <View style={styles.dateBadge}>
-          <Text style={styles.dateText}>HOJE</Text>
-        </View>
-
-        {MENSAGENS_INICIAIS.map((msg) => (
-          <View 
-            key={msg.id} 
-            style={[styles.msgContainer, msg.eu ? styles.msgEu : styles.msgOutro]}
-          >
-            {!msg.eu && (
-              <Text style={[styles.userLabel, { color: theme.subText }]}>
-                {msg.usuario} <Text style={{ fontSize: 9 }}>• Apt {msg.apto}</Text>
-              </Text>
-            )}
-            <View style={[
-              styles.bubble, 
-              { backgroundColor: msg.eu ? theme.bubbleEu : theme.bubbleOutro }
-            ]}>
-              <Text style={[styles.msgText, { color: msg.eu ? "#fff" : theme.text }]}>
-                {msg.texto}
-              </Text>
-              <Text style={[styles.horaText, { color: msg.eu ? "rgba(255,255,255,0.7)" : theme.subText }]}>
-                {msg.hora}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      {loading ? <ActivityIndicator style={{flex:1}} color={COLORS.primary}/> : (
+        <ScrollView 
+          ref={scrollViewRef}
+          contentContainerStyle={styles.chatArea}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        >
+          {mensagens.map((msg) => {
+            const ehEu = msg.id_autor === userId;
+            return (
+              <View key={msg.id} style={[styles.msgContainer, ehEu ? styles.msgEu : styles.msgOutro]}>
+                {!ehEu && <Text style={[styles.userLabel, { color: theme.subText }]}>{msg.nome_autor}</Text>}
+                <View style={[styles.bubble, { backgroundColor: ehEu ? theme.bubbleEu : theme.bubbleOutro }]}>
+                  <Text style={[styles.msgText, { color: ehEu ? "#fff" : theme.text }]}>{msg.texto}</Text>
+                  <Text style={[styles.horaText, { color: ehEu ? "rgba(255,255,255,0.7)" : theme.subText }]}>
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <View style={[styles.inputBar, { backgroundColor: theme.header, borderTopColor: isDark ? COLORS.dark.border : "#eee" }]}>
-        <TouchableOpacity style={styles.attachBtn}>
-          <Ionicons name="add-circle-outline" size={28} color={theme.bubbleEu} />
-        </TouchableOpacity>
-        
-        <TextInput 
-          placeholder="Escreva para o condomínio..."
-          placeholderTextColor={theme.subText}
-          value={mensagem}
-          onChangeText={setMensagem}
-          style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text }]}
-          multiline
-        />
+        <View style={{ flex: 1 }}>
+          <TextInput 
+            placeholder="Escreva para o condomínio..."
+            placeholderTextColor={theme.subText}
+            value={mensagem}
+            onChangeText={setMensagem}
+            maxLength={LIMITE_CARACTERES} // Impede digitar mais que o limite
+            style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text }]}
+            multiline
+          />
+          {/* Contador de caracteres opcional para o usuário ver */}
+          {mensagem.length > LIMITE_CARACTERES * 0.8 && (
+            <Text style={{ fontSize: 9, color: COLORS.red, position: 'absolute', bottom: -12, right: 10 }}>
+              {mensagem.length}/{LIMITE_CARACTERES}
+            </Text>
+          )}
+        </View>
 
         <TouchableOpacity 
-          style={[styles.sendBtn, { backgroundColor: mensagem.trim() ? theme.bubbleEu : theme.subText }]}
-          disabled={!mensagem.trim()}
+          onPress={enviarMensagem}
+          style={[styles.sendBtn, { backgroundColor: (mensagem.trim() && mensagem.length <= LIMITE_CARACTERES) ? theme.bubbleEu : theme.subText }]}
+          disabled={!mensagem.trim() || mensagem.length > LIMITE_CARACTERES}
         >
           <Ionicons name="send" size={18} color="white" />
         </TouchableOpacity>
@@ -128,54 +160,19 @@ export default function TestChatGeral() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingTop: 50, 
-    paddingBottom: 15, 
-    paddingHorizontal: 15, 
-    borderBottomWidth: 1 
-  },
+  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 50, paddingBottom: 15, paddingHorizontal: 15, borderBottomWidth: 1 },
   headerInfo: { flex: 1, marginLeft: 10 },
   chatTitle: { fontSize: 16, fontWeight: 'bold' },
   chatStatus: { fontSize: 11, fontWeight: '700' },
-
-  chatArea: { padding: 20, paddingBottom: 40 },
-  dateBadge: { alignSelf: 'center', backgroundColor: 'rgba(120,120,120,0.1)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginBottom: 20 },
-  dateText: { fontSize: 10, fontWeight: 'bold', color: '#888', letterSpacing: 1 },
-
+  chatArea: { padding: 20 },
   msgContainer: { maxWidth: '85%', marginBottom: 15 },
   msgEu: { alignSelf: 'flex-end' },
   msgOutro: { alignSelf: 'flex-start' },
-
   userLabel: { fontSize: 11, fontWeight: 'bold', marginBottom: 4, marginLeft: 5 },
-  bubble: { padding: 12, borderRadius: 18, elevation: 1 },
+  bubble: { padding: 12, borderRadius: 18 },
   msgText: { fontSize: 14, lineHeight: 20 },
   horaText: { fontSize: 9, textAlign: 'right', marginTop: 4 },
-
-  inputBar: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingHorizontal: 15, 
-    paddingVertical: 10, 
-    borderTopWidth: 1,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 15 
-  },
-  attachBtn: { marginRight: 10 },
-  input: { 
-    flex: 1, 
-    borderRadius: 25, 
-    paddingHorizontal: 20, 
-    paddingVertical: 8, 
-    fontSize: 14, 
-    maxHeight: 100 
-  },
-  sendBtn: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginLeft: 10 
-  }
+  inputBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 10, borderTopWidth: 1, paddingBottom: Platform.OS === 'ios' ? 30 : 15 },
+  input: { flex: 1, borderRadius: 25, paddingHorizontal: 20, paddingVertical: 8, fontSize: 14 },
+  sendBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginLeft: 10 }
 });

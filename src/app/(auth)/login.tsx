@@ -1,110 +1,144 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  TextInput, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Image 
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { router } from "expo-router";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/consts/colors";
-import ArrowBack from "@/components/ArrowVoltar";
+import { useRouter } from "expo-router"; 
+import { supabase } from "../../lib/supabase";
 
 export default function Login() {
+  const router = useRouter();
   const [isDark, setIsDark] = useState(true);
-
-  React.useEffect(() => {
-    const carregarTema = async () => {
-      const salvo = await AsyncStorage.getItem('@vizzo_theme');
-      if (salvo !== null) setIsDark(salvo === 'dark');
-    };
-    carregarTema();
-  }, []);
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    input: isDark ? "#252828" : "#f9f9f9",
-    border: isDark ? "#353838" : "#eeeeee",
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    label: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    bg: isDark ? "#0f1111" : "#f5f5f5",
+    card: isDark ? "#1a1d1d" : "#ffffff",
+    input: isDark ? "#252828" : "#ffffff",
+    border: isDark ? "#353838" : "#dddddd",
+    text: isDark ? "#ffffff" : "#0f1111",
   };
 
+  async function handleLogin() {
+    if (!email || !senha) {
+      Alert.alert("Atenção", "Por favor, preencha o e-mail e a senha.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. Autenticação no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: senha,
+      });
+
+      if (authError) {
+        Alert.alert("Erro ao entrar", "E-mail ou senha incorretos.");
+        setLoading(false);
+        return;
+      }
+
+      const userId = authData.user.id;
+
+      // 2. Busca o perfil para saber se é ADM ou Morador
+      // Vamos tentar buscar em ambas as tabelas
+      const [resAdmin, resMorador] = await Promise.all([
+        supabase.from("tb_administrador").select("id_administrador").eq("id_administrador", userId).single(),
+        supabase.from("tb_morador").select("id_morador").eq("id_morador", userId).single()
+      ]);
+
+      if (resAdmin.data || resMorador.data) {
+        // Para o TCC, você pode até mostrar mensagens diferentes se quiser
+        const tipo = resAdmin.data ? "Administrador" : "Morador";
+        Alert.alert("Bem-vindo!", `Acesso ${tipo} realizado com sucesso!`);
+        
+        // REDIRECIONAMENTO PARA AS PASTAS NOVAS:
+        // O caminho ignora os parênteses, então (main)/(tabs)/home vira apenas /home
+        // Mas se der erro, tente o caminho completo: "/(main)/(tabs)/home"
+        router.replace("/(main)/(tabs)/home"); 
+      } else {
+        Alert.alert("Aviso", "Usuário autenticado, mas perfil não encontrado nas tabelas de segurança.");
+      }
+      
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Erro", "Ocorreu um problema ao identificar seu perfil.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"} 
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
-      <ScrollView contentContainerStyle={styles.centerContent} showsVerticalScrollIndicator={false}>
-        
-        <View style={[styles.loginForm, { 
-          backgroundColor: theme.card, 
-          borderColor: theme.border, 
-          borderWidth: isDark ? 0 : 1,
-          shadowOpacity: isDark ? 0.3 : 0.05 
-        }]}>
-          
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require("@/assets/img/logo.png")} 
-              style={styles.logo} 
-              resizeMode="contain" 
-            />
-          </View>
+      <ScrollView contentContainerStyle={styles.centerContent}>
+        <TouchableOpacity
+          style={styles.themeToggle}
+          onPress={() => setIsDark(!isDark)}
+        >
+          <Text style={{ color: "#2d79f3", fontWeight: "bold" }}>
+            {isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
+          </Text>
+        </TouchableOpacity>
 
+        <View style={[styles.loginForm, { backgroundColor: theme.card }]}>
           <Text style={styles.brandTitle}>VIZZO</Text>
-          <Text style={[styles.loginTitle, { color: theme.text }]}>Bem-vindo de volta</Text>
+          <Text style={[styles.loginTitle, { color: theme.text }]}>
+            Login de Acesso
+          </Text>
 
-          <Text style={[styles.inputLabel, { color: theme.label }]}>E-MAIL OU CPF</Text>
+          <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>
+            E-MAIL
+          </Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
-            <TextInput 
-              placeholder="Digite seus dados" 
-              placeholderTextColor="#888" 
-              style={{ color: theme.text, flex: 1, fontSize: 14 }} 
+            <TextInput
+              style={{ color: theme.text, flex: 1 }}
+              placeholder="seu@email.com"
+              placeholderTextColor="#8b8e98"
+              keyboardType="email-address"
               autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
             />
           </View>
 
-          <Text style={[styles.inputLabel, { color: theme.label, marginTop: 15 }]}>SENHA</Text>
+          <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>
+            SENHA
+          </Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
-            <TextInput 
-              placeholder="••••••••" 
-              placeholderTextColor="#888" 
-              secureTextEntry 
-              style={{ color: theme.text, flex: 1, fontSize: 14 }} 
+            <TextInput
+              style={{ color: theme.text, flex: 1 }}
+              placeholder="••••••••"
+              secureTextEntry
+              placeholderTextColor="#8b8e98"
+              value={senha}
+              onChangeText={setSenha}
             />
           </View>
 
           <TouchableOpacity 
-            style={styles.mainButton} 
-            onPress={() => router.replace("/(main)/(tabs)/home")} 
-            activeOpacity={0.8}
+            style={[styles.mainButton, loading && { opacity: 0.7 }]} 
+            onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.mainButtonText}>ENTRAR NO VIZZO</Text>
+            <Text style={styles.mainButtonText}>
+              {loading ? "VERIFICANDO..." : "ENTRAR"}
+            </Text>
           </TouchableOpacity>
-
-          <View style={styles.esqueciView}>
-            <TouchableOpacity onPress={() => router.push("/(auth)/esqueci-senha")}>
-              <Text style={styles.esqueciText}>Esqueceu a senha?</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-
-        <TouchableOpacity 
-          style={{ marginTop: 30, alignItems: 'center' }} 
-          onPress={() => router.push("/(auth)/cadastro")}
-        >
-          <Text style={{ color: theme.label, fontSize: 14 }}>
-            Não tem uma conta? <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>Cadastre-se aqui</Text>
-          </Text>
-        </TouchableOpacity>
-
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -112,42 +146,45 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   centerContent: { flexGrow: 1, justifyContent: "center", padding: 25 },
-  loginForm: { 
-    padding: 35, 
-    borderRadius: 30, 
-    borderTopWidth: 6, 
-    borderTopColor: COLORS.orange, 
-    elevation: 8, 
-    shadowColor: "#000", 
-    shadowRadius: 15 
+  themeToggle: { alignSelf: "center", marginBottom: 20 },
+  loginForm: {
+    padding: 35,
+    borderRadius: 20,
+    borderTopWidth: 6,
+    borderTopColor: "#ff8c00",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
-  logoContainer: {
-    alignItems: 'center',
+  brandTitle: {
+    color: "#ff8c00",
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 4,
+    textAlign: "center",
     marginBottom: 5,
   },
-  logo: {
-    width: 110,
+  loginTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  inputLabel: { fontSize: 12, fontWeight: "600", marginBottom: 8 },
+  inputContainer: {
+    borderWidth: 1.5,
+    borderRadius: 10,
     height: 55,
+    paddingHorizontal: 15,
+    justifyContent: "center",
+    marginBottom: 20,
   },
-  brandTitle: { color: COLORS.orange, fontSize: 12, fontWeight: "900", letterSpacing: 5, textAlign: "center", marginBottom: 5 },
-  loginTitle: { fontSize: 22, fontWeight: "bold", marginBottom: 30, textAlign: "center" },
-  inputLabel: { fontSize: 10, fontWeight: "700", marginBottom: 8, letterSpacing: 1 },
-  inputContainer: { 
-    borderWidth: 1, 
-    borderRadius: 15, 
-    height: 55, 
-    paddingHorizontal: 15, 
-    justifyContent: 'center' 
+  mainButton: {
+    backgroundColor: "#2d79f3",
+    padding: 18,
+    borderRadius: 10,
+    alignItems: "center",
   },
-  mainButton: { 
-    backgroundColor: COLORS.primary, 
-    padding: 18, 
-    borderRadius: 15, 
-    alignItems: "center", 
-    marginTop: 30,
-    elevation: 4
-  },
-  mainButtonText: { color: "#fff", fontWeight: "bold", letterSpacing: 1.5, fontSize: 14 },
-  esqueciView: { marginTop: 25, alignItems: 'center' },
-  esqueciText: { color: COLORS.primary, fontWeight: "600", fontSize: 13 }
+  mainButtonText: { color: "white", fontWeight: "bold" },
 });

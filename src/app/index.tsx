@@ -1,11 +1,26 @@
-import React, { useState } from "react";
-import { View, Text, ImageBackground, TouchableOpacity, StyleSheet, StatusBar } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, ImageBackground, TouchableOpacity, StyleSheet, StatusBar, ActivityIndicator } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from "@/consts/colors";
+import { supabase } from "@/lib/supabase"; // Importando o banco
 
 export default function Index() {
   const [isDark, setIsDark] = useState(true);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // 1. Lógica de Segurança: Verificar se já está logado ao abrir o app
+  useEffect(() => {
+    const verificarSessao = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Se já está logado, vai direto para a Home sem mostrar a Landing Page
+        // router.replace("/(main)/(tabs)/home");
+      }
+      setCheckingAuth(false);
+    };
+    verificarSessao();
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -24,6 +39,15 @@ export default function Index() {
     cardBtn: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"
   };
 
+  // Enquanto verifica se o usuário está logado, mostra um carregamento
+  if (checkingAuth) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.dark.bg, justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#2d79f3" />
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? COLORS.dark.bg : COLORS.light.bg }}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
@@ -39,20 +63,19 @@ export default function Index() {
           </Text>
 
           <View style={styles.buttonContainer}>
-            {/* Título sutil para a escolha de cadastro */}
             <Text style={[styles.choiceLabel, { color: theme.text }]}>QUERO ME CADASTRAR COMO:</Text>
             
             <View style={styles.rowButtons}>
               <TouchableOpacity 
                 style={[styles.choiceButton, { backgroundColor: "#2d79f3" }]} 
-                onPress={() => router.push("/CadastroAdministrador")}
+                onPress={() => router.push("/(auth)/CadastroAdministrador")} 
               >
                 <Text style={styles.mainButtonText}>SÍNDICO</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.choiceButton, { backgroundColor: "#ff8c00" }]} 
-                onPress={() => router.push("/CadastroMorador")}
+                onPress={() => router.push("/(auth)/CadastroMorador")} 
               >
                 <Text style={styles.mainButtonText}>MORADOR</Text>
               </TouchableOpacity>
@@ -66,7 +89,7 @@ export default function Index() {
 
             <TouchableOpacity 
               style={[styles.secondaryButton, { backgroundColor: theme.secondaryBtn }]} 
-              onPress={() => router.push("/Login")}
+              onPress={() => router.push("/(auth)/Login")} // Ajustado para L minúsculo e pasta certa
             >
               <Text style={[styles.secondaryButtonText, { color: theme.text }]}>ACESSAR MINHA CONTA</Text>
             </TouchableOpacity>
@@ -77,11 +100,10 @@ export default function Index() {
   );
 }
 
+// ... seus estilos permanecem iguais
 const styles = StyleSheet.create({
   heroImage: { flex: 1 },
   overlay: { flex: 1, justifyContent: "center", padding: "10%" },
-  themeToggle: { position: 'absolute', top: 50, right: 20, padding: 10 },
-  themeToggleText: { fontSize: 12, fontWeight: 'bold' },
   heroTag: { color: "#ff8c00", letterSpacing: 3, fontSize: 12, fontWeight: "700", marginBottom: 15 },
   heroTitle: { fontSize: 40, fontWeight: "800", lineHeight: 46, marginBottom: 40 },
   italicText: { fontStyle: "italic", color: "#2d79f3" },

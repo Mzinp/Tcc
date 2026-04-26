@@ -1,13 +1,15 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet, TextInputProps } from "react-native";
 import { COLORS } from "@/consts/colors";
+import { Ionicons } from "@expo/vector-icons"; // Adicionado para os ícones
 
 interface InputFieldProps extends TextInputProps {
   label: string;
   error?: string;
+  icon?: any; // Adicionado: agora ele aceita ícone!
 }
 
-export default function InputField({ label, error, style, ...props }: InputFieldProps) {
+export default function InputField({ label, error, icon, style, ...props }: InputFieldProps) {
   const [isDark] = React.useState(true);
 
   const theme = {
@@ -20,15 +22,27 @@ export default function InputField({ label, error, style, ...props }: InputField
   return (
     <View style={styles.container}>
       <Text style={[styles.label, { color: COLORS.primary }]}>{label}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          { backgroundColor: theme.input, color: theme.text, borderColor: error ? COLORS.red : theme.border },
-          style,
-        ]}
-        placeholderTextColor={theme.subText}
-        {...props}
-      />
+      
+      <View style={[
+          styles.inputContainer, 
+          { backgroundColor: theme.input, borderColor: error ? COLORS.red : theme.border }
+        ]}>
+        
+        {icon && (
+          <Ionicons name={icon} size={20} color={theme.subText} style={styles.icon} />
+        )}
+
+        <TextInput
+          style={[
+            styles.input,
+            { color: theme.text },
+            style,
+          ]}
+          placeholderTextColor={theme.subText}
+          {...props}
+        />
+      </View>
+      
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
@@ -44,11 +58,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     letterSpacing: 1,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderRadius: 12,
     height: 50,
     paddingHorizontal: 15,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: '100%',
     fontSize: 14,
   },
   error: {

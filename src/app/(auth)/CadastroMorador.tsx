@@ -11,7 +11,7 @@ import {
   View,
   Alert,
 } from "react-native";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export default function CadastroMorador() {
   const router = useRouter();
@@ -50,14 +50,30 @@ export default function CadastroMorador() {
 
       // 2. Criar o login no Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password: senha,
       });
 
-      if (authError) throw authError;
+      // TRATAMENTO DE ERRO SEGURO
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          Alert.alert(
+            "Conta Existente",
+            "Este e-mail já está cadastrado no Vizzo.",
+            [
+              { text: "Fazer Login", onPress: () => router.push("/(auth)/Login") },
+              { text: "Tentar outro", style: "cancel" }
+            ]
+          );
+        } else {
+          Alert.alert("Erro no cadastro", authError.message);
+        }
+        setLoading(false);
+        return; 
+      }
 
       // 3. Salvar na tb_morador com o ID do condomínio encontrado
-      if (authData.user) {
+      if (authData?.user) {
         const { error: dbError } = await supabase.from("tb_morador").insert([
           {
             id_morador: authData.user.id,
@@ -65,15 +81,27 @@ export default function CadastroMorador() {
             cpf: cpf.replace(/\D/g, ""),
             apartamento,
             bloco,
-            id_condominio: condoData.id_condominio, // Vinculação automática
+            id_condominio: condoData.id_condominio, 
           },
         ]);
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          Alert.alert("Erro ao salvar dados", dbError.message);
+          setLoading(false);
+          return;
+        }
 
-        Alert.alert("Sucesso!", "Cadastro realizado! Agora faça seu login.", [
-          { text: "Ir para Login", onPress: () => router.replace("/Login") },
-        ]);
+        // Desloga o usuário para forçar o primeiro login manual (Segurança)
+        await supabase.auth.signOut();
+
+        // 4. REDIRECIONAMENTO PARA A TELA DE SUCESSO (E DEPOIS LOGIN)
+        router.replace({
+          pathname: "/(main)/(modal)/sucesso",
+          params: { 
+            mensagem: "Conta criada com sucesso! Faça login para continuar.",
+            proximaTela: "/(auth)/Login" // <--- Aqui ele manda pro Login!
+          }
+        });
       }
     } catch (error: any) {
       Alert.alert("Erro no Cadastro", error.message);
@@ -94,7 +122,7 @@ export default function CadastroMorador() {
         <View style={styles.form}>
           <Text style={styles.label}>CÓDIGO DO CONDOMÍNIO</Text>
           <TextInput
-            style={[styles.input, { borderColor: "#2d79f3" }]} // Destaque para o código
+            style={[styles.input, { borderColor: "#2d79f3" }]} 
             placeholder="Ex: VIZZO-0001"
             placeholderTextColor="#666"
             value={codigoCondominio}

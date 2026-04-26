@@ -5,13 +5,11 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  TextInput,
   Linking 
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, router } from 'expo-router';
-import Navegacao from "@/components/Navegacao";
 import { COLORS } from "@/consts/colors";
 
 export default function Mensagens() {
@@ -61,7 +59,10 @@ export default function Mensagens() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+      >
         
         <Text style={[styles.sectionTitle, { color: theme.subText }]}>COMUNIDADE</Text>
         <TouchableOpacity 
@@ -88,7 +89,7 @@ export default function Mensagens() {
           { id: '2', nome: 'Síndico Rodrigo', cargo: 'Administrativo', icon: 'person-circle', tel: '11988888888' },
           { id: '3', nome: 'Zelador Marcos', cargo: 'Manutenção', icon: 'build', tel: '11977777777' },
         ].map((contato) => (
-          <View key={contato.id} style={[styles.contactCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View key={contato.id} style={[styles.contactCard, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1 }]}>
             <View style={[styles.contactIcon, { backgroundColor: isDark ? COLORS.dark.border : "#e0e0e0" }]}>
               <Ionicons name={contato.icon as any} size={24} color={theme.accent} />
             </View>
@@ -115,8 +116,6 @@ export default function Mensagens() {
         </View>
 
       </ScrollView>
-
-      <Navegacao />
     </View>
   );
 }
@@ -134,7 +133,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: 'bold' },
   searchBtn: { padding: 8, borderRadius: 12, backgroundColor: 'rgba(120,120,120,0.1)' },
   
-  scrollContent: { paddingHorizontal: 25, paddingBottom: 120 },
+  scrollContent: { paddingHorizontal: 25, paddingBottom: 100 },
   sectionTitle: { fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 15 },
 
   mainChatCard: { 
@@ -160,7 +159,6 @@ const styles = StyleSheet.create({
     padding: 15, 
     borderRadius: 20, 
     marginBottom: 12, 
-    borderWidth: 1 
   },
   contactIcon: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
   contactInfo: { flex: 1, marginLeft: 15 },

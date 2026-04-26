@@ -1,30 +1,33 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export default function CadastroAdmin() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  // States do Formulário
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [telefone, setTelefone] = useState("");
   const [cargo, setCargo] = useState("");
-  // REMOVIDO: setIdCondominio (será feito na próxima tela)
   const [senha, setSenha] = useState("");
 
   async function handleCadastro() {
-    // 1. Validação (Atualizada: removido idCondominio)
+    // 1. Validação de campos vazios
     if (!nome || !email || !cpf || !cargo || !senha) {
       Alert.alert(
         "Atenção",
@@ -33,48 +36,68 @@ export default function CadastroAdmin() {
       return;
     }
 
-    // 2. Criar o login no Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password: senha,
-    });
+    setLoading(true);
 
-    if (authError) {
-      Alert.alert("Erro no cadastro", authError.message);
-      return;
-    }
+    try {
+      // 2. Criar o login no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: senha,
+      });
 
-    // 3. Salvar os dados na tabela tb_administrador
-    if (authData.user) {
-      const { error: dbError } = await supabase
-        .from("tb_administrador")
-        .insert([
-          {
-            id_administrador: authData.user.id,
-            nome,
-            email,
-            cpf: cpf.replace(/\D/g, ""),
-            telefone,
-            cargo,
-            // O id_condominio fica nulo por enquanto até a próxima tela salvar
-          },
-        ]);
-
-      if (dbError) {
-        console.log(dbError);
-        Alert.alert("Erro ao salvar dados", dbError.message);
-      } else {
-        Alert.alert(
-          "Cadastro Pessoal Concluído!",
-          "Agora, vamos registrar os dados do seu condomínio.",
-          [
-            {
-              text: "Continuar",
-              onPress: () => router.replace("/CriarCondominio")
-            },
-          ],
-        );
+      // Se der erro no Auth (ex: e-mail já cadastrado)
+      if (authError) {
+        setLoading(false); // Libera o botão
+        if (authError.message.includes("already registered")) {
+          Alert.alert(
+            "Conta Existente",
+            "Este e-mail já está cadastrado. Tente fazer login.",
+          );
+        } else {
+          Alert.alert("Erro no Cadastro", authError.message);
+        }
+        return;
       }
+
+      // 3. Salvar os dados na tabela tb_administrador
+      if (authData?.user) {
+        const { error: dbError } = await supabase
+          .from("tb_administrador")
+          .insert([
+            {
+              id_administrador: authData.user.id,
+              nome: nome,
+              email: email.trim(),
+              cpf: cpf.replace(/\D/g, ""),
+              telefone: telefone,
+              cargo: cargo,
+              id_condominio: null, // Será preenchido na tela de Criar Condomínio
+            },
+          ]);
+
+        if (dbError) {
+          setLoading(false); // Libera o botão
+          console.error("Erro DB:", dbError);
+          Alert.alert(
+            "Erro ao salvar",
+            "Não conseguimos salvar seus dados no banco.",
+          );
+          return;
+        }
+
+        // 4. Limpar a sessão e Redirecionar
+        // Fazemos logOut porque o signUp loga automaticamente, mas queremos que ela faça login manual.
+        await supabase.auth.signOut();
+
+        setLoading(false); // Sucesso!
+
+        // Redireciona direto para o Login
+        router.replace("/(auth)/Login");
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error("Erro Crítico:", error);
+      Alert.alert("Erro", "Ocorreu uma falha inesperada.");
     }
   }
 
@@ -148,8 +171,16 @@ export default function CadastroAdmin() {
             secureTextEntry
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleCadastro}>
-            <Text style={styles.buttonText}>PRÓXIMO PASSO</Text>
+          <TouchableOpacity
+            style={[styles.button, loading && { opacity: 0.7 }]}
+            onPress={handleCadastro}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>PRÓXIMO PASSO</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -157,7 +188,6 @@ export default function CadastroAdmin() {
   );
 }
 
-// Estilos permanecem os mesmos que você enviou...
 const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: "#0f1111" },
   container: { padding: 30, paddingTop: 60 },

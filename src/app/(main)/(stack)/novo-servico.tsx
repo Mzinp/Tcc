@@ -7,11 +7,14 @@ import {
   TouchableOpacity, 
   ScrollView, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from "@/lib/supabase"; // Integração com banco
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
 
@@ -25,6 +28,7 @@ const CATEGORIAS = [
 
 export default function NovoServico() {
   const [isDark, setIsDark] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [categoriaSel, setCategoriaSel] = useState('1');
   
   const [titulo, setTitulo] = useState('');
@@ -38,6 +42,53 @@ export default function NovoServico() {
     };
     carregarTema();
   }, []);
+
+  async function handleSalvarServico() {
+    if (!titulo || !preco || !descricao) {
+      Alert.alert("Atenção", "Por favor, preencha todos os campos.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // 1. Pega o ID do usuário logado
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
+        return;
+      }
+
+      // 2. Insere na tabela tb_servico
+      // Certifique-se que sua tabela tenha essas colunas exatamente assim:
+      const { error } = await supabase
+        .from("tb_servico")
+        .insert([
+          {
+            id_morador: user.id,
+            nome_servico: titulo,
+            valor_estimado: preco.replace("R$", "").trim(),
+            descricao_servico: descricao,
+            categoria: CATEGORIAS.find(c => c.id === categoriaSel)?.nome || "Outros",
+            status_servico: "Ativo"
+          }
+        ]);
+
+      if (error) throw error;
+
+      // 3. Redireciona para o modal de sucesso que já tínhamos configurado
+      router.push({
+        pathname: "/(main)/(modal)/sucesso",
+        params: { mensagem: "Serviço cadastrado! Seu QR Code de prestador já está ativo." }
+      });
+
+    } catch (error: any) {
+      Alert.alert("Erro ao cadastrar", error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const theme = {
     bg: isDark ? COLORS.dark.bg : "#f5f5f5",
@@ -120,13 +171,15 @@ export default function NovoServico() {
         </View>
 
         <TouchableOpacity 
-          style={styles.mainButton}
-          onPress={() => router.push({
-            pathname: "/(main)/(modal)/sucesso",
-            params: { mensagem: "Serviço cadastrado! Seu QR Code de prestador já está ativo." }
-          })}
+          style={[styles.mainButton, loading && { opacity: 0.7 }]}
+          onPress={handleSalvarServico}
+          disabled={loading}
         >
-          <Text style={styles.mainButtonText}>CRIAR ANÚNCIO E GERAR QR CODE</Text>
+          {loading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.mainButtonText}>CRIAR ANÚNCIO E GERAR QR CODE</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

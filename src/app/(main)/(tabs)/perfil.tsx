@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, router } from 'expo-router';
-import Navegacao from "@/components/Navegacao";
+import { supabase } from "@/lib/supabase"; 
 import { COLORS } from "@/consts/colors";
 
 const { width } = Dimensions.get('window');
@@ -11,6 +11,11 @@ const { width } = Dimensions.get('window');
 export default function Perfil() {
   const [isDark, setIsDark] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  
+  // States para os dados do banco
+  const [nome, setNome] = useState("Carregando...");
+  const [infoExtra, setInfoExtra] = useState("");
 
   useFocusEffect(
     React.useCallback(() => {
@@ -23,11 +28,50 @@ export default function Perfil() {
         }
       };
       carregarTema();
+      buscarDadosUsuario(); // Busca os dados sempre que a tela focar
     }, [])
   );
 
+  async function buscarDadosUsuario() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) return;
+
+      // Busca na tabela de Morador
+      const { data: morador } = await supabase
+        .from("tb_morador")
+        .select("nome_morador, num_apartamento, bloco")
+        .eq("id_morador", user.id)
+        .single();
+
+      if (morador) {
+        setNome(morador.nome_morador);
+        setInfoExtra(`Bloco ${morador.bloco} - Apto ${morador.num_apartamento}`);
+      } else {
+        // Se não for morador, busca na tabela de Administrador
+        const { data: admin } = await supabase
+          .from("tb_administrador")
+          .select("nome_administrador")
+          .eq("id_administrador", user.id)
+          .single();
+
+        if (admin) {
+          setNome(admin.nome_administrador);
+          setInfoExtra("Administrador do Sistema");
+        }
+      }
+    } catch (error) {
+      console.log("Erro ao buscar dados:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const handleLogout = async () => {
-    router.replace("/");
+    await supabase.auth.signOut();
+    router.replace("/(auth)/Login"); 
   };
 
   const theme = {
@@ -43,10 +87,18 @@ export default function Perfil() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={[styles.avatarBorder, { borderColor: COLORS.primary }]}>
-            <Image source={{ uri: 'https://github.com/gustavosilva.png' }} style={styles.avatar} />
+            {/* Mantive a imagem fixa, mas você pode integrar com storage depois */}
+            <Image source={{ uri: 'https://ui-avatars.com/api/?name=' + nome + '&background=2d79f3&color=fff' }} style={styles.avatar} />
           </View>
-          <Text style={[styles.userName, { color: theme.text }]}>Gustavo Silva</Text>
-          <Text style={[styles.userInfo, { color: theme.subText }]}>Bloco A - Apto 52</Text>
+
+          {loading ? (
+            <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
+          ) : (
+            <>
+              <Text style={[styles.userName, { color: theme.text }]}>{nome}</Text>
+              <Text style={[styles.userInfo, { color: theme.subText }]}>{infoExtra}</Text>
+            </>
+          )}
 
           <TouchableOpacity 
             style={[styles.qrShortcut, { backgroundColor: isDark ? theme.card : COLORS.primary }]}
@@ -114,8 +166,6 @@ export default function Perfil() {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      <Navegacao />
     </View>
   );
 }
@@ -128,7 +178,6 @@ const styles = StyleSheet.create({
   avatar: { width: 100, height: 100, borderRadius: 50 },
   userName: { fontSize: 22, fontWeight: 'bold', marginTop: 15 },
   userInfo: { fontSize: 14, marginBottom: 20 },
-  
   qrShortcut: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -141,7 +190,6 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   qrShortcutText: { color: 'white', fontWeight: 'bold', marginLeft: 10, fontSize: 12, letterSpacing: 1 },
-
   menu: { paddingHorizontal: 25 },
   menuItem: { 
     flexDirection: 'row', 
@@ -153,8 +201,7 @@ const styles = StyleSheet.create({
   menuLeft: { flexDirection: 'row', alignItems: 'center' },
   menuLabel: { marginLeft: 15, fontSize: 16 },
   logoutBtn: { marginTop: 40, alignItems: 'center', paddingBottom: 20 },
-  logoutText: { color: COLORS.red, fontWeight: 'bold', letterSpacing: 1 },
-
+  logoutText: { color: "#ff5252", fontWeight: 'bold', letterSpacing: 1 },
   modalOverlay: { 
     flex: 1, 
     backgroundColor: 'rgba(0,0,0,0.8)', 

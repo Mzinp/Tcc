@@ -28,6 +28,7 @@ export default function Sucesso() {
   );
 
   useEffect(() => {
+    // Inicia as animações
     Animated.parallel([
       Animated.spring(scaleValue, {
         toValue: 1,
@@ -47,13 +48,15 @@ export default function Sucesso() {
       })
     ]).start();
 
+    // Timer para redirecionamento automático
     const timer = setTimeout(() => {
+      // Se não vier destino, volta para a home das tabs
       const destino = (proximaTela as string) || "/(main)/(tabs)/home";
       router.replace(destino as any);
     }, 3500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [proximaTela]);
 
   const theme = {
     bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
@@ -66,6 +69,13 @@ export default function Sucesso() {
     inputRange: [0, 1],
     outputRange: ['0%', '100%']
   });
+
+  // Função para definir o texto do rodapé dinamicamente
+  const getFooterText = () => {
+    if (proximaTela === "/(auth)/Login") return "INDO PARA O LOGIN";
+    if (proximaTela === "/(main)/(tabs)/marketplace") return "VOLTANDO AO MARKETPLACE";
+    return "VOLTANDO PARA A HOME";
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -92,12 +102,12 @@ export default function Sucesso() {
       </Animated.View>
       
       <View style={styles.loaderContainer}>
-         <Text style={[styles.footer, { color: theme.footer }]}>
-            {proximaTela === "/login" ? "INDO PARA O LOGIN" : "VOLTANDO PARA A HOME"}
-         </Text>
-         <View style={[styles.progressBar, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.input }]}>
+          <Text style={[styles.footer, { color: theme.footer }]}>
+            {getFooterText()}
+          </Text>
+          <View style={[styles.progressBar, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.input }]}>
             <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
-         </View>
+          </View>
       </View>
     </View>
   );

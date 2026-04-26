@@ -1,24 +1,60 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
+import { supabase } from "@/lib/supabase";
 
 export default function Reservas() {
+  const router = useRouter();
   const [isDark, setIsDark] = useState(true);
-  const [userType, setUserType] = useState<'admin' | 'user'>('admin');
+  const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState<'admin' | 'user'>('user');
+  const [areas, setAreas] = useState<any[]>([]);
+
+  // Carrega as áreas reais do banco de dados
+  async function carregarDados() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // 1. Verifica perfil (Admin ou Morador)
+      const { data: admin } = await supabase
+        .from('tb_administrador')
+        .select('id_administrador')
+        .eq('id_administrador', user.id)
+        .single();
+
+      setUserType(admin ? 'admin' : 'user');
+
+      // 2. Busca áreas cadastradas na tb_area_comum
+      const { data, error } = await supabase
+        .from('tb_area_comum')
+        .select('*')
+        .eq('ativo', true)
+        .order('nome', { ascending: true });
+
+      if (error) throw error;
+      setAreas(data || []);
+
+    } catch (error) {
+      console.log("Erro ao carregar áreas:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
+      carregarDados();
       const carregarTema = async () => {
         try {
           const salvo = await AsyncStorage.getItem('@vizzo_theme');
           if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema em Reservas");
-        }
+        } catch (e) { console.log("Erro no tema"); }
       };
       carregarTema();
     }, [])
@@ -31,20 +67,6 @@ export default function Reservas() {
     subtitle: isDark ? COLORS.primary : "#1e5bb8",
     subText: isDark ? "#a0a0a0" : "#666666",
     border: isDark ? COLORS.dark.border : COLORS.light.border,
-  };
-
-  const [areas, setAreas] = useState([
-    { id: '1', nome: 'Salão de Festas', disponivel: true, icon: 'wine' },
-    { id: '2', nome: 'Churrasqueira 01', disponivel: false, icon: 'flame' },
-    { id: '3', nome: 'Espaço Gourmet', disponivel: true, icon: 'restaurant' },
-    { id: '4', nome: 'Academia', disponivel: true, icon: 'barbell' },
-  ]);
-
-  const alternarStatus = (id: string) => {
-    if (userType !== 'admin') return;
-    setAreas(prev => prev.map(area => 
-      area.id === id ? { ...area, disponivel: !area.disponivel } : area
-    ));
   };
 
   return (
@@ -65,43 +87,72 @@ export default function Reservas() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {areas.map((area) => (
-          <View key={area.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-            <View style={styles.iconArea}>
-                 <Ionicons name={area.icon as any} size={24} color={area.disponivel ? COLORS.primary : theme.subText} />
-            </View>
+      {loading ? (
+        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
+      ) : (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {areas.length === 0 && (
+            <Text style={{ color: theme.subText, textAlign: 'center', marginTop: 20 }}>
+              Nenhuma área cadastrada pelo síndico.
+            </Text>
+          )}
 
-            <View style={styles.info}>
-              <Text style={[styles.areaName, { color: theme.text }]}>{area.nome}</Text>
-              <View style={styles.statusRow}>
-                <View style={[styles.dot, { backgroundColor: area.disponivel ? COLORS.green : COLORS.red }]} />
-                <Text style={[styles.status, { color: area.disponivel ? COLORS.green : COLORS.red }]}>
-                  {area.disponivel ? "Livre para Uso" : "Indisponível"}
-                </Text>
+          {areas.map((area) => (
+            <View key={area.id_area} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={styles.iconArea}>
+                   <Ionicons name={(area.icone || 'wine') as any} size={24} color={COLORS.primary} />
               </View>
-            </View>
 
-            {userType === 'admin' ? (
-              <TouchableOpacity 
-                style={[styles.adminBtn, { backgroundColor: area.disponivel ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)' }]} 
-                onPress={() => alternarStatus(area.id)}
-              >
-                <Text style={[styles.adminBtnText, { color: area.disponivel ? COLORS.red : COLORS.green }]}>
-                  {area.disponivel ? "Bloquear" : "Liberar"}
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity 
-                disabled={!area.disponivel}
-                style={[styles.reservaBtn, { opacity: area.disponivel ? 1 : 0.3 }]}
-              >
-                <Text style={styles.reservaBtnText}>RESERVAR</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ))}
-      </ScrollView>
+              <View style={styles.info}>
+                <Text style={[styles.areaName, { color: theme.text }]}>{area.nome}</Text>
+                <View style={styles.statusRow}>
+                  <Text style={[styles.priceText, { color: theme.subText }]}>
+                    Taxa: <Text style={{ color: COLORS.green, fontWeight: 'bold' }}>R$ {area.valor_reserva?.toFixed(2)}</Text>
+                  </Text>
+                </View>
+              </View>
+
+              {userType === 'admin' ? (
+                <TouchableOpacity 
+                  style={[styles.adminBtn, { backgroundColor: 'rgba(45, 121, 243, 0.1)' }]} 
+                  onPress={() => router.push({
+                    pathname: "/(main)/(stack)/gestaoarea",
+                    params: { 
+                      idArea: area.id_area, 
+                      nomeArea: area.nome, 
+                      valorAtual: area.valor_reserva.toString() 
+                    }
+                  })}
+                >
+                  <Text style={[styles.adminBtnText, { color: COLORS.primary }]}>
+                    AJUSTAR
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                  style={styles.reservaBtn}
+                  onPress={() => router.push({
+                    pathname: "/(main)/(stack)/cadastroreserva",
+                    params: { areaNome: area.nome, areaId: area.id_area }
+                  })}
+                >
+                  <Text style={styles.reservaBtnText}>RESERVAR</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* Botão para Admin Adicionar Nova Área (Opcional para o TCC) */}
+      {userType === 'admin' && (
+        <TouchableOpacity 
+          style={styles.fab} 
+          onPress={() => router.push("/(main)/(stack)/gestaoarea")}
+        >
+          <Ionicons name="add" size={30} color="white" />
+        </TouchableOpacity>
+      )}
 
       <View style={styles.testSwitcher}>
           <TouchableOpacity 
@@ -110,7 +161,7 @@ export default function Reservas() {
           >
             <Ionicons name="swap-horizontal" size={16} color={COLORS.primary} />
             <Text style={{ fontSize: 10, color: theme.text, fontWeight: 'bold', marginLeft: 8 }}>
-               MODO: {userType === 'admin' ? 'SÍNDICO' : 'MORADOR'}
+                MODO TESTE: {userType === 'admin' ? 'SÍNDICO' : 'MORADOR'}
             </Text>
           </TouchableOpacity>
       </View>
@@ -127,36 +178,18 @@ const styles = StyleSheet.create({
   roleBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 10 },
   roleText: { color: 'white', fontSize: 10, fontWeight: '900' },
   subtitle: { fontSize: 12, fontWeight: '500' },
-  content: { padding: 25, paddingBottom: 120 },
-  card: { 
-    padding: 15, 
-    borderRadius: 20, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 15, 
-    borderWidth: 1,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10
-  },
+  content: { padding: 25, paddingBottom: 150 },
+  card: { padding: 15, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 15, borderWidth: 1, elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 10 },
   iconArea: { width: 50, height: 50, borderRadius: 15, backgroundColor: 'rgba(45, 121, 243, 0.1)', justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1, marginLeft: 15 },
   areaName: { fontSize: 16, fontWeight: 'bold' },
   statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-  status: { fontSize: 11, fontWeight: '700' },
+  priceText: { fontSize: 12 },
   adminBtn: { paddingVertical: 10, paddingHorizontal: 15, borderRadius: 12 },
   adminBtnText: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
   reservaBtn: { backgroundColor: COLORS.primary, paddingVertical: 10, paddingHorizontal: 15, borderRadius: 12 },
   reservaBtnText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
-  testSwitcher: { position: 'absolute', bottom: 40, width: '100%', alignItems: 'center' },
-  floatingTest: { 
-    flexDirection: 'row',
-    padding: 15, 
-    borderRadius: 30, 
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    elevation: 5
-  }
+  fab: { position: 'absolute', right: 25, bottom: 100, width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  testSwitcher: { position: 'absolute', bottom: 30, width: '100%', alignItems: 'center' },
+  floatingTest: { flexDirection: 'row', padding: 15, borderRadius: 30, borderWidth: 1, borderColor: COLORS.primary, elevation: 5 }
 });
