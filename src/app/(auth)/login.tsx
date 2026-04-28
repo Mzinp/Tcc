@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -9,72 +8,88 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router"; 
 import { supabase } from "../../lib/supabase";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Login() {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(true);
+  
+  // App agora é fixo no Dark Mode conforme pedido
+  const isDark = true; 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Estados para a mensagem de boas-vindas bonita
+  const [msgVisible, setMsgVisible] = useState(false);
+  const [msgTexto, setMsgTexto] = useState("");
+  const [msgTipo, setMsgTipo] = useState<"success" | "error">("success");
+
   const theme = {
-    bg: isDark ? "#0f1111" : "#f5f5f5",
-    card: isDark ? "#1a1d1d" : "#ffffff",
-    input: isDark ? "#252828" : "#ffffff",
-    border: isDark ? "#353838" : "#dddddd",
-    text: isDark ? "#ffffff" : "#0f1111",
+    bg: "#0f1111",
+    card: "#1a1d1d",
+    input: "#252828",
+    border: "#353838",
+    text: "#ffffff",
   };
+
+  // Função para mostrar a mensagem e redirecionar
+  function mostrarAviso(texto: string, tipo: "success" | "error" = "success") {
+    setMsgTexto(texto);
+    setMsgTipo(tipo);
+    setMsgVisible(true);
+    
+    // Fecha sozinho após 2 segundos
+    setTimeout(() => {
+      setMsgVisible(false);
+      if (tipo === "success") {
+        router.replace("/(main)/(tabs)/home");
+      }
+    }, 2000);
+  }
 
   async function handleLogin() {
     if (!email || !senha) {
-      Alert.alert("Atenção", "Por favor, preencha o e-mail e a senha.");
+      mostrarAviso("Preencha todos os campos", "error");
       return;
     }
 
     setLoading(true);
 
     try {
-      // 1. Autenticação no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email,
         password: senha,
       });
 
       if (authError) {
-        Alert.alert("Erro ao entrar", "E-mail ou senha incorretos.");
+        mostrarAviso("E-mail ou senha incorretos", "error");
         setLoading(false);
         return;
       }
 
       const userId = authData.user.id;
 
-      // 2. Busca o perfil para saber se é ADM ou Morador
-      // Vamos tentar buscar em ambas as tabelas
       const [resAdmin, resMorador] = await Promise.all([
-        supabase.from("tb_administrador").select("id_administrador").eq("id_administrador", userId).single(),
-        supabase.from("tb_morador").select("id_morador").eq("id_morador", userId).single()
+        supabase.from("tb_administrador").select("id_administrador").eq("id_administrador", userId).maybeSingle(),
+        supabase.from("tb_morador").select("id_morador").eq("id_morador", userId).maybeSingle()
       ]);
 
       if (resAdmin.data || resMorador.data) {
-        // Para o TCC, você pode até mostrar mensagens diferentes se quiser
         const tipo = resAdmin.data ? "Administrador" : "Morador";
-        Alert.alert("Bem-vindo!", `Acesso ${tipo} realizado com sucesso!`);
-        
-        // REDIRECIONAMENTO PARA AS PASTAS NOVAS:
-        // O caminho ignora os parênteses, então (main)/(tabs)/home vira apenas /home
-        // Mas se der erro, tente o caminho completo: "/(main)/(tabs)/home"
-        router.replace("/(main)/(tabs)/home"); 
+        mostrarAviso(`Seja bem-vindo, ${tipo}!`, "success");
       } else {
-        Alert.alert("Aviso", "Usuário autenticado, mas perfil não encontrado nas tabelas de segurança.");
+        mostrarAviso("Perfil não encontrado no sistema", "error");
+        setLoading(false);
       }
       
     } catch (err) {
       console.log(err);
-      Alert.alert("Erro", "Ocorreu um problema ao identificar seu perfil.");
-    } finally {
+      mostrarAviso("Erro na conexão com o servidor", "error");
       setLoading(false);
     }
   }
@@ -84,25 +99,28 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
-      <ScrollView contentContainerStyle={styles.centerContent}>
-        <TouchableOpacity
-          style={styles.themeToggle}
-          onPress={() => setIsDark(!isDark)}
-        >
-          <Text style={{ color: "#2d79f3", fontWeight: "bold" }}>
-            {isDark ? "☀️ Modo Claro" : "🌙 Modo Escuro"}
-          </Text>
-        </TouchableOpacity>
+      {/* Modal de Mensagem Customizada (Substitui o Alert) */}
+      <Modal transparent visible={msgVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.toast, { borderLeftColor: msgTipo === "success" ? "#4caf50" : "#f44336" }]}>
+            <Ionicons 
+              name={msgTipo === "success" ? "checkmark-circle" : "alert-circle"} 
+              size={24} 
+              color={msgTipo === "success" ? "#4caf50" : "#f44336"} 
+            />
+            <Text style={styles.toastText}>{msgTexto}</Text>
+          </View>
+        </View>
+      </Modal>
 
+      <ScrollView contentContainerStyle={styles.centerContent}>
         <View style={[styles.loginForm, { backgroundColor: theme.card }]}>
           <Text style={styles.brandTitle}>VIZZO</Text>
           <Text style={[styles.loginTitle, { color: theme.text }]}>
             Login de Acesso
           </Text>
 
-          <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>
-            E-MAIL
-          </Text>
+          <Text style={[styles.inputLabel, { color: "#e0e0e0" }]}>E-MAIL</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
             <TextInput
               style={{ color: theme.text, flex: 1 }}
@@ -115,9 +133,7 @@ export default function Login() {
             />
           </View>
 
-          <Text style={[styles.inputLabel, { color: isDark ? "#e0e0e0" : "#444444" }]}>
-            SENHA
-          </Text>
+          <Text style={[styles.inputLabel, { color: "#e0e0e0" }]}>SENHA</Text>
           <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
             <TextInput
               style={{ color: theme.text, flex: 1 }}
@@ -134,9 +150,11 @@ export default function Login() {
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={styles.mainButtonText}>
-              {loading ? "VERIFICANDO..." : "ENTRAR"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.mainButtonText}>ENTRAR</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -146,16 +164,12 @@ export default function Login() {
 
 const styles = StyleSheet.create({
   centerContent: { flexGrow: 1, justifyContent: "center", padding: 25 },
-  themeToggle: { alignSelf: "center", marginBottom: 20 },
   loginForm: {
     padding: 35,
     borderRadius: 20,
     borderTopWidth: 6,
     borderTopColor: "#ff8c00",
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    elevation: 20,
   },
   brandTitle: {
     color: "#ff8c00",
@@ -165,12 +179,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 5,
   },
-  loginTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 30,
-    textAlign: "center",
-  },
+  loginTitle: { fontSize: 24, fontWeight: "bold", marginBottom: 30, textAlign: "center" },
   inputLabel: { fontSize: 12, fontWeight: "600", marginBottom: 8 },
   inputContainer: {
     borderWidth: 1.5,
@@ -185,6 +194,35 @@ const styles = StyleSheet.create({
     padding: 18,
     borderRadius: 10,
     alignItems: "center",
+    marginTop: 10,
   },
-  mainButtonText: { color: "white", fontWeight: "bold" },
+  mainButtonText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  
+  // Estilos do novo Toast
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toast: {
+    backgroundColor: '#1a1d1d',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 12,
+    borderLeftWidth: 5,
+    width: '80%',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 20,
+  },
+  toastText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 15,
+  }
 });

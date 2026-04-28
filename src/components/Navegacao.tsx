@@ -1,184 +1,92 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Modal, StatusBar } from "react-native";
-import { supabase } from "../lib/supabase"; // Caminho correto partindo de /components
-import { useRouter } from "expo-router";
-import { COLORS } from "@/consts/colors";
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router, usePathname, useFocusEffect } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface NavegacaoProps {
-  title: string;
-}
+export default function Navegacao() {
+  const pathname = usePathname();
+  const [isDark, setIsDark] = useState<boolean | null>(null);
 
-export default function Navegacao({ title }: NavegacaoProps) {
-  const [menuAberto, setMenuAberto] = useState(false);
-  const router = useRouter();
+  // Sincroniza o tema com o que foi definido na Home
+  useFocusEffect(
+    React.useCallback(() => {
+      const carregarTema = async () => {
+        try {
+          const salvo = await AsyncStorage.getItem('@vizzo_theme');
+          // Por padrão true para manter o fundo preto que você quer
+          setIsDark(salvo === null ? true : salvo === 'dark');
+        } catch (e) {
+          setIsDark(true);
+        }
+      };
+      carregarTema();
+    }, [])
+  );
 
-  // Função de Logout blindada com o L MAIÚSCULO
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-      router.replace("/(auth)/Login"); 
-    } catch (error) {
-      console.log("Erro ao sair:", error);
-    }
-  }
+  const theme = {
+    // Agora usando o #0f1111 para ficar igual à Home
+    bg: isDark ? "#0f1111" : "#ffffff",
+    border: isDark ? "#252828" : "#f0f0f0",
+    inactive: isDark ? "#8b8e98" : "#999999",
+    active: "#2d79f3" 
+  };
+
+  const menuItems = [
+    { name: "Início", icon: "home", route: "/home" },
+    { name: "Mercado", icon: "cart", route: "/marketplace" },
+    { name: "Chat", icon: "chatbubbles", route: "/mensagens" }, 
+    { name: "Perfil", icon: "person", route: "/perfil" }, 
+  ];
+
+  if (isDark === null) return null;
 
   return (
-    <>
-      {/* --- HEADER --- */}
-      <View style={styles.navBar}>
-        <TouchableOpacity style={styles.menuBtn} onPress={() => setMenuAberto(true)}>
-          <Text style={{ color: "white", fontSize: 24 }}>☰</Text>
-        </TouchableOpacity>
+    <View style={[styles.navBar, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
+      {menuItems.map((item) => {
+        // Verifica se a rota atual é a do item para deixar o ícone aceso
+        const isActive = pathname.includes(item.route);
         
-        <Text style={styles.logo}>{title.toUpperCase()}</Text>
-        
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutLink}>SAIR</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* --- MENU LATERAL (Modal) --- */}
-      <Modal 
-        visible={menuAberto} 
-        animationType="fade" 
-        transparent={true}
-        onRequestClose={() => setMenuAberto(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.sideMenu}>
-            <Text style={styles.menuTitle}>VIZZO - GESTÃO</Text>
-            
-            {/* LINK: DASHBOARD (Home em Tabs) */}
-            <TouchableOpacity 
-              style={styles.menuLink} 
-              onPress={() => { setMenuAberto(false); router.push("/home"); }}
-            >
-              <Text style={styles.menuLinkText}>DASHBOARD</Text>
-            </TouchableOpacity>
-
-            {/* LINK: COMUNICADOS (Stack) */}
-            <TouchableOpacity 
-              style={styles.menuLink} 
-              onPress={() => { setMenuAberto(false); router.push("/comunicados"); }}
-            >
-              <Text style={styles.menuLinkText}>COMUNICADOS</Text>
-            </TouchableOpacity>
-
-            {/* LINK: RESERVAS (Stack) */}
-            <TouchableOpacity 
-              style={styles.menuLink} 
-              onPress={() => { setMenuAberto(false); router.push("/reservas"); }}
-            >
-              <Text style={styles.menuLinkText}>RESERVAS</Text>
-            </TouchableOpacity>
-
-            {/* LINK: OCORRÊNCIAS (Stack) */}
-            <TouchableOpacity 
-              style={styles.menuLink} 
-              onPress={() => { setMenuAberto(false); router.push("/ocorrencias"); }}
-            >
-              <Text style={styles.menuLinkText}>OCORRÊNCIAS</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              onPress={() => setMenuAberto(false)} 
-              style={styles.closeButton}
-            >
-              <Text style={styles.closeButtonText}>FECHAR MENU</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Área clicável fora do menu para fechar */}
+        return (
           <TouchableOpacity 
-            style={{ flex: 1 }} 
-            onPress={() => setMenuAberto(false)} 
-            activeOpacity={1}
-          />
-        </View>
-      </Modal>
-    </>
+            key={item.route} 
+            onPress={() => router.push(item.route as any)}
+            style={styles.tab}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name={isActive ? (item.icon as any) : `${item.icon}-outline`} 
+              size={22} 
+              color={isActive ? theme.active : theme.inactive} 
+            />
+            <Text style={[styles.label, { color: isActive ? theme.active : theme.inactive }]}>
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
-    height: 100,
-    backgroundColor: "#0f1111",
-    justifyContent: "space-between",
+    // Altura adaptada para não ficar cortado em Android/iOS
+    height: Platform.OS === 'ios' ? 85 : 70, 
+    borderTopWidth: 1,
+    justifyContent: "space-around",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: "#222",
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    // Espaçamento extra no iOS por causa da barra de gestos
+    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
-  menuBtn: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  logo: {
-    color: "#2d79f3", // Azul Vizzo
-    fontSize: 16,
-    fontWeight: "bold",
-    letterSpacing: 4,
-  },
-  logoutBtn: {
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-  },
-  logoutLink: {
-    color: "#ff8c00", // Laranja Vizzo
-    fontSize: 10,
-    fontWeight: "bold",
-    letterSpacing: 1,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
-    flexDirection: "row",
-  },
-  sideMenu: {
-    width: "75%",
-    backgroundColor: "#1a1d1d",
-    padding: 30,
-    paddingTop: 80,
-    borderRightWidth: 1,
-    borderRightColor: "#333",
-  },
-  menuTitle: {
-    color: "#8b8e98",
-    fontSize: 10,
-    letterSpacing: 3,
-    marginBottom: 40,
-    fontWeight: "900",
-  },
-  menuLink: {
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(53, 56, 56, 0.5)",
-  },
-  menuLinkText: {
-    color: "white",
-    fontSize: 13,
-    fontWeight: "600",
-    letterSpacing: 1.5,
-  },
-  closeButton: {
-    marginTop: 60,
-    padding: 15,
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#353838",
-  },
-  closeButtonText: {
-    color: "#2d79f3",
-    fontSize: 11,
-    fontWeight: "bold",
-    letterSpacing: 2,
-  },
+  tab: { alignItems: "center", justifyContent: "center", flex: 1 },
+  label: { fontSize: 9, marginTop: 4, fontWeight: 'bold', letterSpacing: 0.5 }
 });

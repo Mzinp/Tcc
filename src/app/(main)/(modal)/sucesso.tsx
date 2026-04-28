@@ -1,31 +1,24 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import { View, Text, StyleSheet, Animated, Easing, StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router, useLocalSearchParams } from "expo-router";
 import { COLORS } from "@/consts/colors";
 
 export default function Sucesso() {
   const { mensagem, proximaTela } = useLocalSearchParams();
-  const [isDark, setIsDark] = useState(true);
   
   const scaleValue = useRef(new Animated.Value(0)).current;
   const opacityValue = useRef(new Animated.Value(0)).current;
   const progressValue = useRef(new Animated.Value(0)).current;
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema");
-        }
-      };
-      carregarTema();
-    }, [])
-  );
+  // Forçamos o padrão Full Black para o TCC
+  const theme = {
+    bg: "#0f1111",
+    text: "#ffffff",
+    subtitle: "#8b8e98",
+    footer: "#353838",
+    accent: "#2ecc71" // Verde para sucesso
+  };
 
   useEffect(() => {
     // Inicia as animações
@@ -50,7 +43,7 @@ export default function Sucesso() {
 
     // Timer para redirecionamento automático
     const timer = setTimeout(() => {
-      // Se não vier destino, volta para a home das tabs
+      // Ajuste de rota: Se não vier destino, volta para a aba Home
       const destino = (proximaTela as string) || "/(main)/(tabs)/home";
       router.replace(destino as any);
     }, 3500);
@@ -58,34 +51,29 @@ export default function Sucesso() {
     return () => clearTimeout(timer);
   }, [proximaTela]);
 
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    text: isDark ? "white" : COLORS.light.text,
-    subtitle: isDark ? COLORS.dark.subText : "#666666",
-    footer: isDark ? "#353838" : "#aaaaaa"
-  };
-
   const progressWidth = progressValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%']
   });
 
-  // Função para definir o texto do rodapé dinamicamente
   const getFooterText = () => {
-    if (proximaTela === "/(auth)/Login") return "INDO PARA O LOGIN";
-    if (proximaTela === "/(main)/(tabs)/marketplace") return "VOLTANDO AO MARKETPLACE";
+    if (proximaTela === "/(auth)/login") return "INDO PARA O LOGIN";
+    if (proximaTela?.includes("marketplace")) return "VOLTANDO AO MARKETPLACE";
+    if (proximaTela?.includes("visitantes")) return "VOLTANDO AOS VISITANTES";
     return "VOLTANDO PARA A HOME";
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <StatusBar barStyle="light-content" />
       
       <Animated.View style={[
         styles.iconCircle, 
         { 
           transform: [{ scale: scaleValue }], 
           opacity: opacityValue,
-          shadowColor: COLORS.green,
+          backgroundColor: theme.accent,
+          shadowColor: theme.accent,
         }
       ]}>
         <View style={styles.whiteRing}>
@@ -95,7 +83,7 @@ export default function Sucesso() {
       
       <Animated.View style={{ opacity: opacityValue, alignItems: 'center' }}>
         <Text style={[styles.title, { color: theme.text }]}>Tudo certo!</Text>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.accent }]} />
         <Text style={[styles.subtitle, { color: theme.subtitle }]}>
           {mensagem || "Sua solicitação foi processada com sucesso."}
         </Text>
@@ -105,8 +93,8 @@ export default function Sucesso() {
           <Text style={[styles.footer, { color: theme.footer }]}>
             {getFooterText()}
           </Text>
-          <View style={[styles.progressBar, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.input }]}>
-            <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+          <View style={[styles.progressBar, { backgroundColor: "#1a1d1d" }]}>
+            <Animated.View style={[styles.progressFill, { width: progressWidth, backgroundColor: theme.accent }]} />
           </View>
       </View>
     </View>
@@ -117,19 +105,19 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   iconCircle: { 
     width: 140, height: 140, borderRadius: 70, 
-    backgroundColor: COLORS.green, justifyContent: 'center', alignItems: 'center',
-    marginBottom: 40, elevation: 15, shadowOpacity: 0.3, shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 }
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 40, elevation: 20, shadowOpacity: 0.4, shadowRadius: 25,
+    shadowOffset: { width: 0, height: 12 }
   },
   whiteRing: {
     width: 120, height: 120, borderRadius: 60, borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)', justifyContent: 'center', alignItems: 'center'
+    borderColor: 'rgba(255,255,255,0.4)', justifyContent: 'center', alignItems: 'center'
   },
-  title: { fontSize: 32, fontWeight: 'bold', letterSpacing: -1 },
-  divider: { width: 40, height: 4, backgroundColor: COLORS.green, borderRadius: 2, marginVertical: 15 },
-  subtitle: { fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 10 },
+  title: { fontSize: 34, fontWeight: 'bold', letterSpacing: -1 },
+  divider: { width: 45, height: 5, borderRadius: 3, marginVertical: 18 },
+  subtitle: { fontSize: 16, textAlign: 'center', lineHeight: 24, paddingHorizontal: 15 },
   loaderContainer: { position: 'absolute', bottom: 60, alignItems: 'center', width: '100%' },
-  footer: { fontSize: 10, letterSpacing: 2, fontWeight: '800', marginBottom: 15 },
-  progressBar: { width: 150, height: 6, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: COLORS.green }
+  footer: { fontSize: 11, letterSpacing: 2, fontWeight: '900', marginBottom: 15 },
+  progressBar: { width: 160, height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%' }
 });

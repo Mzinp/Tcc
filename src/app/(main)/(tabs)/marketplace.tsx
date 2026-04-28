@@ -1,60 +1,53 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/consts/colors";
+
+const THEME_COLORS = {
+  primary: "#2d79f3",
+  darkBg: "#0f1111",
+  darkCard: "#1a1d1d",
+  darkBorder: "#252828"
+};
 
 const SERVICOS = [
-  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', cor: COLORS.orange, status: 'Ativo' },
-  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', cor: COLORS.primary, status: 'Ativo' },
-  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', cor: COLORS.green, status: 'Ativo' },
+  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', icon: 'construct-outline' },
+  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', icon: 'musical-notes-outline' },
+  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', icon: 'paw-outline' },
 ];
 
 export default function Marketplace() {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(true);
   const [abaAtiva, setAbaAtiva] = useState('comprar');
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro no Marketplace");
-        }
-      };
-      carregarTema();
-    }, [])
-  );
-
   const theme = {
-    bg: isDark ? COLORS.dark.bg : "#f5f5f5",
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subtitle: isDark ? COLORS.dark.subText : "#666666",
-    border: isDark ? COLORS.dark.border : "#dddddd",
+    bg: THEME_COLORS.darkBg,
+    card: THEME_COLORS.darkCard,
+    text: "#ffffff",
+    subtitle: "#8b8e98",
+    border: THEME_COLORS.darkBorder,
+    accent: THEME_COLORS.primary
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <StatusBar barStyle="light-content" />
+      
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Vizzo Marketplace</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Marketplace</Text>
         
         <View style={[styles.tabBar, { backgroundColor: theme.card }]}>
           <TouchableOpacity 
-            style={[styles.tab, abaAtiva === 'comprar' && styles.tabAtiva]} 
+            style={[styles.tab, abaAtiva === 'comprar' && { backgroundColor: theme.border }]} 
             onPress={() => setAbaAtiva('comprar')}
           >
-            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? COLORS.primary : theme.subtitle }]}>CONTRATAR</Text>
+            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? theme.accent : theme.subtitle }]}>CONTRATAR</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tab, abaAtiva === 'vender' && styles.tabAtiva]} 
+            style={[styles.tab, abaAtiva === 'vender' && { backgroundColor: theme.border }]} 
             onPress={() => setAbaAtiva('vender')}
           >
-            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? COLORS.primary : theme.subtitle }]}>MEUS SERVIÇOS</Text>
+            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? theme.accent : theme.subtitle }]}>MEUS ANÚNCIOS</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -63,27 +56,28 @@ export default function Marketplace() {
         <FlatList
           data={SERVICOS}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ padding: 25, paddingBottom: 120 }} 
+          contentContainerStyle={{ padding: 25, paddingBottom: 150 }} 
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border, borderWidth: isDark ? 0 : 1 }]}>
-              <View style={[styles.iconBox, { backgroundColor: item.cor }]}>
-                <Ionicons name="construct" size={24} color="white" />
+            <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+              <View style={[styles.iconBox, { backgroundColor: theme.bg }]}>
+                <Ionicons name={item.icon as any} size={24} color={theme.accent} />
               </View>
+              
               <View style={styles.info}>
                 <Text style={[styles.serviceName, { color: theme.text }]}>{item.nome}</Text>
                 <Text style={[styles.provider, { color: theme.subtitle }]}>{item.prestador}</Text>
-                <View style={styles.badge}>
-                  <Ionicons name="checkmark-circle" size={12} color={COLORS.green} />
-                  <Text style={styles.badgeText}>DISPONÍVEL</Text>
-                </View>
-                <Text style={styles.price}>{item.preco}</Text>
+                <Text style={[styles.price, { color: theme.accent }]}>{item.preco}</Text>
               </View>
               
               <TouchableOpacity 
-                style={styles.hireBtn}
+                style={[styles.hireBtn, { backgroundColor: theme.accent }]}
                 onPress={() => router.push({ 
                   pathname: "/(main)/(modal)/sucesso", 
-                  params: { mensagem: "O vizinho foi avisado! Ele entrará em contato pelo chat." } 
+                  params: { 
+                    mensagem: "O vizinho foi avisado! Ele entrará em contato pelo chat.",
+                    proximaTela: "/(main)/(tabs)/marketplace"
+                  } 
                 })}
               >
                 <Text style={styles.hireBtnText}>Pedir</Text>
@@ -93,15 +87,24 @@ export default function Marketplace() {
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Ionicons name="briefcase-outline" size={80} color={theme.border} />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>Você ainda não oferece serviços</Text>
-          <Text style={[styles.emptySub, { color: theme.subtitle }]}>Compartilhe seus talentos com o condomínio!</Text>
+          <View style={[styles.emptyIconCircle, { backgroundColor: theme.card }]}>
+            <Ionicons name="briefcase-outline" size={50} color={theme.accent} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>Sua vitrine está vazia</Text>
+          <Text style={[styles.emptySub, { color: theme.subtitle }]}>Ajude a economia do Vizzo compartilhando seus talentos!</Text>
+          
+          <TouchableOpacity 
+            style={[styles.btnAnunciar, { borderColor: theme.border }]}
+            onPress={() => router.push("/(main)/(stack)/novo-servico")}
+          >
+            <Text style={[styles.btnAnunciarText, { color: theme.accent }]}>ANUNCIAR MEU TRABALHO</Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Botão Flutuante (FAB) */}
+      {/* Botão Flutuante (FAB) - Seguindo o Azul Vizzo */}
       <TouchableOpacity 
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.accent }]}
         activeOpacity={0.9}
         onPress={() => router.push("/(main)/(stack)/novo-servico")}
       >
@@ -113,48 +116,44 @@ export default function Marketplace() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 25, paddingTop: 60, paddingBottom: 10 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
-  tabBar: { flexDirection: 'row', borderRadius: 12, padding: 5, marginBottom: 10 },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-  tabAtiva: { backgroundColor: 'rgba(45, 121, 243, 0.1)' },
-  tabText: { fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  header: { paddingHorizontal: 25, paddingTop: 65, paddingBottom: 15 },
+  title: { fontSize: 32, fontWeight: 'bold', marginBottom: 25 },
+  tabBar: { flexDirection: 'row', borderRadius: 18, padding: 5, marginBottom: 10 },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 14 },
+  tabText: { fontSize: 11, fontWeight: '900', letterSpacing: 1.2 },
   card: { 
     padding: 18, 
-    borderRadius: 20, 
+    borderRadius: 24, 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 15,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1
   },
-  iconBox: { width: 50, height: 50, borderRadius: 15, justifyContent: 'center', alignItems: 'center' },
+  iconBox: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1, marginLeft: 15 },
-  serviceName: { fontWeight: 'bold', fontSize: 16 },
-  provider: { fontSize: 12, marginBottom: 5 },
-  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(76, 175, 80, 0.1)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5, marginBottom: 5 },
-  badgeText: { color: COLORS.green, fontSize: 9, fontWeight: 'bold', marginLeft: 4 },
-  price: { color: COLORS.primary, fontWeight: 'bold', fontSize: 15 },
-  hireBtn: { backgroundColor: COLORS.primary, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
+  serviceName: { fontWeight: 'bold', fontSize: 17, marginBottom: 2 },
+  provider: { fontSize: 13, marginBottom: 6 },
+  price: { fontWeight: '800', fontSize: 15 },
+  hireBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 12 },
   hireBtnText: { color: 'white', fontSize: 13, fontWeight: 'bold' },
   fab: { 
     position: 'absolute', 
-    bottom: 30, // Ajustado para ficar visível acima da área das tabs
+    bottom: 35, 
     right: 25, 
-    backgroundColor: COLORS.orange,
-    width: 60, 
-    height: 60, 
-    borderRadius: 30, 
+    width: 65, 
+    height: 65, 
+    borderRadius: 22, // Quadrado arredondado moderno
     justifyContent: 'center', 
     alignItems: 'center',
     elevation: 8,
-    shadowColor: "#000",
     shadowOpacity: 0.3,
     shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 }
   },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  emptyTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20 },
-  emptySub: { fontSize: 14, textAlign: 'center', marginTop: 10 },
+  emptyIconCircle: { width: 100, height: 100, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 25 },
+  emptyTitle: { fontSize: 22, fontWeight: 'bold' },
+  emptySub: { fontSize: 14, textAlign: 'center', marginTop: 10, lineHeight: 22 },
+  btnAnunciar: { marginTop: 35, paddingVertical: 16, paddingHorizontal: 25, borderRadius: 18, borderWidth: 1 },
+  btnAnunciarText: { fontWeight: 'bold', letterSpacing: 1, fontSize: 12 }
 });

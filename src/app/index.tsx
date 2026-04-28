@@ -89,7 +89,7 @@ export default function Index() {
 
             <TouchableOpacity 
               style={[styles.secondaryButton, { backgroundColor: theme.secondaryBtn }]} 
-              onPress={() => router.push("/(auth)/Login")} // Ajustado para L minúsculo e pasta certa
+              onPress={() => router.push("/(auth)/login")} // Ajustado para L minúsculo e pasta certa
             >
               <Text style={[styles.secondaryButtonText, { color: theme.text }]}>ACESSAR MINHA CONTA</Text>
             </TouchableOpacity>

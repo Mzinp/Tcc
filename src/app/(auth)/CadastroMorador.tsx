@@ -61,7 +61,7 @@ export default function CadastroMorador() {
             "Conta Existente",
             "Este e-mail já está cadastrado no Vizzo.",
             [
-              { text: "Fazer Login", onPress: () => router.push("/(auth)/Login") },
+              { text: "Fazer Login", onPress: () => router.push("/(auth)/login") },
               { text: "Tentar outro", style: "cancel" }
             ]
           );

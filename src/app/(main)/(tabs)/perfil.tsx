@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, router } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router'; // 'router' já está importado aqui
 import { supabase } from "@/lib/supabase"; 
 import { COLORS } from "@/consts/colors";
 
@@ -14,21 +14,14 @@ export default function Perfil() {
   const [loading, setLoading] = useState(true);
   
   // States para os dados do banco
-  const [nome, setNome] = useState("Carregando...");
+  const [nome, setNome] = useState("Usuário");
   const [infoExtra, setInfoExtra] = useState("");
+  const [dadosCompletos, setDadosCompletos] = useState<any>(null);
 
   useFocusEffect(
     React.useCallback(() => {
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema no Perfil");
-        }
-      };
-      carregarTema();
-      buscarDadosUsuario(); // Busca os dados sempre que a tela focar
+      setIsDark(true); 
+      buscarDadosUsuario();
     }, [])
   );
 
@@ -37,29 +30,32 @@ export default function Perfil() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
 
-      // Busca na tabela de Morador
-      const { data: morador } = await supabase
-        .from("tb_morador")
-        .select("nome_morador, num_apartamento, bloco")
-        .eq("id_morador", user.id)
-        .single();
+      const { data: admin } = await supabase
+        .from("tb_administrador")
+        .select("*")
+        .eq("id_administrador", user.id)
+        .maybeSingle();
 
-      if (morador) {
-        setNome(morador.nome_morador);
-        setInfoExtra(`Bloco ${morador.bloco} - Apto ${morador.num_apartamento}`);
+      if (admin) {
+        setNome(admin.nome);
+        setInfoExtra("Administrador do Sistema");
+        setDadosCompletos({ ...admin, email: user.email, tipo: 'ADM' });
       } else {
-        // Se não for morador, busca na tabela de Administrador
-        const { data: admin } = await supabase
-          .from("tb_administrador")
-          .select("nome_administrador")
-          .eq("id_administrador", user.id)
-          .single();
+        const { data: morador } = await supabase
+          .from("tb_morador")
+          .select("*")
+          .eq("id_morador", user.id)
+          .maybeSingle();
 
-        if (admin) {
-          setNome(admin.nome_administrador);
-          setInfoExtra("Administrador do Sistema");
+        if (morador) {
+          setNome(morador.Nome || morador.nome);
+          setInfoExtra(`Bloco ${morador.Bloco} - Apto ${morador.Apartamento}`);
+          setDadosCompletos({ ...morador, tipo: 'MORADOR' });
         }
       }
     } catch (error) {
@@ -69,30 +65,40 @@ export default function Perfil() {
     }
   }
 
+  // MUDANÇA AQUI: Agora navega em vez de mostrar Alert
+  const verMeusDados = () => {
+    router.push({
+      pathname: "/(main)/(stack)/meus-dados",
+      params: { cache: 'true' } // Opcional: sinaliza que já temos dados
+    });
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.replace("/(auth)/Login"); 
+    router.replace("/login"); 
   };
 
   const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? "#1a1d1d" : COLORS.light.border,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
+    bg: "#0f1111",
+    text: "#ffffff",
+    subText: "#b0b0b0",
+    border: "#1a1d1d",
+    card: "#1a1d1d",
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View style={[styles.avatarBorder, { borderColor: COLORS.primary }]}>
-            {/* Mantive a imagem fixa, mas você pode integrar com storage depois */}
-            <Image source={{ uri: 'https://ui-avatars.com/api/?name=' + nome + '&background=2d79f3&color=fff' }} style={styles.avatar} />
+          <View style={[styles.avatarBorder, { borderColor: "#2d79f3" }]}>
+            <Image 
+              source={{ uri: `https://ui-avatars.com/api/?name=${nome}&background=2d79f3&color=fff` }} 
+              style={styles.avatar} 
+            />
           </View>
 
           {loading ? (
-            <ActivityIndicator color={COLORS.primary} style={{ marginTop: 20 }} />
+            <ActivityIndicator color="#2d79f3" style={{ marginTop: 20 }} />
           ) : (
             <>
               <Text style={[styles.userName, { color: theme.text }]}>{nome}</Text>
@@ -101,9 +107,8 @@ export default function Perfil() {
           )}
 
           <TouchableOpacity 
-            style={[styles.qrShortcut, { backgroundColor: isDark ? theme.card : COLORS.primary }]}
+            style={[styles.qrShortcut, { backgroundColor: "#2d79f3" }]}
             onPress={() => setModalVisible(true)}
-            activeOpacity={0.8}
           >
             <Ionicons name="qr-code" size={20} color="white" />
             <Text style={styles.qrShortcutText}>MEU QR CODE</Text>
@@ -112,54 +117,36 @@ export default function Perfil() {
 
         <View style={styles.menu}>
           {[
-            { icon: 'person-outline', label: 'Meus Dados' },
-            { icon: 'notifications-outline', label: 'Notificações' },
-            { icon: 'shield-checkmark-outline', label: 'Privacidade' },
-            { icon: 'help-circle-outline', label: 'Ajuda e Suporte' },
+            { icon: 'person-outline', label: 'Meus Dados', action: verMeusDados },
+            { icon: 'notifications-outline', label: 'Notificações', action: () => {} },
+            { icon: 'shield-checkmark-outline', label: 'Privacidade', action: () => {} },
+            { icon: 'help-circle-outline', label: 'Ajuda e Suporte', action: () => {} },
           ].map((item, index) => (
             <TouchableOpacity 
               key={index} 
               style={[styles.menuItem, { borderBottomColor: theme.border }]} 
-              activeOpacity={0.7}
+              onPress={item.action}
             >
               <View style={styles.menuLeft}>
-                <Ionicons name={item.icon as any} size={22} color={COLORS.primary} />
+                <Ionicons name={item.icon as any} size={22} color="#2d79f3" />
                 <Text style={[styles.menuLabel, { color: theme.text }]}>{item.label}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={isDark ? "#353838" : "#ccc"} />
+              <Ionicons name="chevron-forward" size={20} color="#353838" />
             </TouchableOpacity>
           ))}
 
-          <TouchableOpacity 
-            style={styles.logoutBtn} 
-            activeOpacity={0.7}
-            onPress={handleLogout}
-          >
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <Text style={styles.logoutText}>Sair da Conta</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity 
-            style={styles.modalOverlay} 
-            activeOpacity={1} 
-            onPress={() => setModalVisible(false)}
-        >
-          <View style={[styles.modalContent, { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.bg }]}>
-            <Text style={[styles.modalTitle, { color: theme.text }]}>Acesso Vizzo</Text>
-            
-            <View style={styles.qrArea}>
-                <Ionicons name="qr-code" size={200} color={isDark ? "white" : "black"} />
-            </View>
-
-            <Text style={[styles.modalInfo, { color: theme.subText }]}>Apresente este código no leitor</Text>
-            
+      <Modal animationType="fade" transparent visible={modalVisible}>
+        <TouchableOpacity style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <View style={[styles.modalContent, { backgroundColor: "#1a1d1d" }]}>
+            <Text style={[styles.modalTitle, { color: 'white' }]}>Acesso Vizzo</Text>
+            <Ionicons name="qr-code" size={200} color="white" />
+            <Text style={[styles.modalInfo, { color: '#ccc' }]}>Apresente este código no leitor</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
                 <Text style={styles.closeBtnText}>FECHAR</Text>
             </TouchableOpacity>
@@ -178,46 +165,18 @@ const styles = StyleSheet.create({
   avatar: { width: 100, height: 100, borderRadius: 50 },
   userName: { fontSize: 22, fontWeight: 'bold', marginTop: 15 },
   userInfo: { fontSize: 14, marginBottom: 20 },
-  qrShortcut: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    paddingVertical: 10, 
-    paddingHorizontal: 20, 
-    borderRadius: 25,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-  },
-  qrShortcutText: { color: 'white', fontWeight: 'bold', marginLeft: 10, fontSize: 12, letterSpacing: 1 },
+  qrShortcut: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 30 },
+  qrShortcutText: { color: 'white', fontWeight: 'bold', marginLeft: 10, fontSize: 12 },
   menu: { paddingHorizontal: 25 },
-  menuItem: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingVertical: 18, 
-    borderBottomWidth: 1 
-  },
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 18, borderBottomWidth: 1 },
   menuLeft: { flexDirection: 'row', alignItems: 'center' },
   menuLabel: { marginLeft: 15, fontSize: 16 },
-  logoutBtn: { marginTop: 40, alignItems: 'center', paddingBottom: 20 },
-  logoutText: { color: "#ff5252", fontWeight: 'bold', letterSpacing: 1 },
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.8)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  modalContent: { 
-    width: width * 0.8, 
-    padding: 30, 
-    borderRadius: 30, 
-    alignItems: 'center',
-    elevation: 20 
-  },
+  logoutBtn: { marginTop: 40, alignItems: 'center' },
+  logoutText: { color: "#ff5252", fontWeight: 'bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '80%', padding: 30, borderRadius: 30, alignItems: 'center' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
-  qrArea: { padding: 15, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20 },
-  modalInfo: { fontSize: 12, marginTop: 20, fontWeight: '600' },
-  closeBtn: { marginTop: 30, padding: 10 },
-  closeBtnText: { color: COLORS.primary, fontWeight: 'bold', letterSpacing: 1 }
+  modalInfo: { fontSize: 12, marginTop: 20 },
+  closeBtn: { marginTop: 30 },
+  closeBtnText: { color: "#2d79f3", fontWeight: 'bold' }
 });
