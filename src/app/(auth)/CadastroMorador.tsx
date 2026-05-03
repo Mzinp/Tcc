@@ -12,6 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import { Ionicons } from "@expo/vector-icons"; // Importamos os ícones para o Checkbox!
 
 export default function CadastroMorador() {
   const router = useRouter();
@@ -23,10 +24,49 @@ export default function CadastroMorador() {
   const [senha, setSenha] = useState("");
   const [apartamento, setApartamento] = useState("");
   const [bloco, setBloco] = useState("");
-  const [codigoCondominio, setCodigoCondominio] = useState(""); // Ex: VIZZO-0001
+  const [codigoCondominio, setCodigoCondominio] = useState(""); 
   const [loading, setLoading] = useState(false);
+  
+  // NOVO: Estado para controlar a aceitação dos termos (LGPD)
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+
+  // Função para CPF: 000.000.000-00
+const maskCPF = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+    .replace(/(-\d{2})\d+?$/, "$1");
+};
+
+// Função para Telefone: (00) 00000-0000
+const maskPhone = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2")
+    .replace(/(-\d{4})\d+?$/, "$1");
+};
+
+// No seu TextInput de CPF, use assim:
+<TextInput
+  value={cpf}
+  onChangeText={(text) => setCpf(maskCPF(text))}
+  maxLength={14}
+  keyboardType="numeric"
+/>
 
   async function handleCadastro() {
+    // NOVA TRAVA: Verificação da LGPD antes de qualquer coisa
+    if (!aceitouTermos) {
+      Alert.alert(
+        "Termos Obrigatórios", 
+        "Para prosseguir, você precisa ler e concordar com os Termos de Uso e Política de Privacidade."
+      );
+      return;
+    }
+
     if (!nome || !email || !cpf || !senha || !codigoCondominio) {
       Alert.alert("Atenção", "Preencha todos os campos obrigatórios!");
       return;
@@ -99,7 +139,7 @@ export default function CadastroMorador() {
           pathname: "/(main)/(modal)/sucesso",
           params: { 
             mensagem: "Conta criada com sucesso! Faça login para continuar.",
-            proximaTela: "/(auth)/Login" // <--- Aqui ele manda pro Login!
+            proximaTela: "/(auth)/login" 
           }
         });
       }
@@ -192,10 +232,24 @@ export default function CadastroMorador() {
             onChangeText={setSenha}
           />
 
+          {/* NOVO: CHECKBOX DE TERMOS E CONDIÇÕES (LGPD) */}
           <TouchableOpacity 
-            style={[styles.button, loading && { opacity: 0.7 }]} 
+            style={styles.checkboxContainer} 
+            onPress={() => setAceitouTermos(!aceitouTermos)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, aceitouTermos && styles.checkboxAtivo]}>
+              {aceitouTermos && <Ionicons name="checkmark" size={14} color="#fff" />}
+            </View>
+            <Text style={styles.checkboxText}>
+              Li e concordo com os <Text style={styles.linkText}>Termos de Uso</Text> e <Text style={styles.linkText}>Política de Privacidade</Text>.
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.button, (!aceitouTermos || loading) && { opacity: 0.5 }]} 
             onPress={handleCadastro}
-            disabled={loading}
+            disabled={loading} // O botão continua clicável para dar o alerta se a pessoa não marcar a caixa!
           >
             <Text style={styles.buttonText}>{loading ? "PROCESSANDO..." : "CRIAR MINHA CONTA"}</Text>
           </TouchableOpacity>
@@ -207,12 +261,20 @@ export default function CadastroMorador() {
 
 const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: "#0f1111" },
-  container: { padding: 30, paddingTop: 60 },
+  container: { padding: 30, paddingTop: 60, paddingBottom: 60 },
   title: { color: "#fff", fontSize: 28, fontWeight: "800" },
   subtitle: { color: "#2d79f3", fontSize: 14, marginBottom: 30, fontWeight: "500" },
   form: { gap: 5 },
   label: { color: "#8b8e98", fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 5 },
   input: { backgroundColor: "#1a1d1d", borderWidth: 1, borderColor: "#353838", borderRadius: 12, height: 55, paddingHorizontal: 15, color: "#fff", marginBottom: 15 },
-  button: { backgroundColor: "#2d79f3", height: 60, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 20 },
+  
+  /* ESTILOS NOVOS DO CHECKBOX */
+  checkboxContainer: { flexDirection: "row", alignItems: "center", marginTop: 5, marginBottom: 15, paddingRight: 20 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#353838", backgroundColor: "#1a1d1d", justifyContent: "center", alignItems: "center", marginRight: 12 },
+  checkboxAtivo: { backgroundColor: "#2d79f3", borderColor: "#2d79f3" },
+  checkboxText: { color: "#8b8e98", fontSize: 12, lineHeight: 18, flex: 1 },
+  linkText: { color: "#2d79f3", fontWeight: "bold" },
+  
+  button: { backgroundColor: "#2d79f3", height: 60, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 10 },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });

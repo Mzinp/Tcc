@@ -67,7 +67,7 @@ export default function CriarCondominio() {
 
       if (!user) {
         Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
-        router.replace("/(auth)/Login");
+        router.replace("/(auth)/login");
         return;
       }
 
@@ -111,7 +111,7 @@ export default function CriarCondominio() {
           pathname: "/(main)/(modal)/sucesso",
           params: { 
             mensagem: `Condomínio registrado!\nCódigo dos moradores: ${condoData.codigo_acesso}`,
-            proximaTela: "/(auth)/Login" 
+            proximaTela: "/(auth)/login" 
           }
         });
         

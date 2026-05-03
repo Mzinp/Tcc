@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   View, 
   Text, 
@@ -59,21 +59,40 @@ export default function NovoServico() {
         return;
       }
 
-      // O comando de Insert que a Isa vai validar depois:
+      // TRAVA DE SEGURANÇA E PREVENÇÃO DE ERRO NO BANCO
+      // Verifica se o usuário que está tentando anunciar é um morador ou um administrador.
+      const { data: moradorData } = await supabase
+        .from("tb_morador")
+        .select("id_morador")
+        .eq("id_morador", user.id)
+        .maybeSingle();
+
+      if (!moradorData) {
+        // Se não achou na tb_morador, então é administrador (ou um usuário inválido)
+        Alert.alert(
+          "Acesso Restrito", 
+          "Apenas moradores cadastrados podem criar anúncios no Marketplace do condomínio."
+        );
+        return;
+      }
+
+      // Se for morador de verdade, o cadastro no banco acontece!
       const { error } = await supabase
         .from("tb_servico")
         .insert([
           {
-            id_morador: user.id,
+            id_morador: user.id, // Agora temos a garantia de que esse ID existe na tb_morador
             nome_servico: titulo,
-            valor_estimado: preco.replace("R$", "").trim(),
+            valor_estimado: parseFloat(preco.replace("R$", "").replace(",", ".").trim()) || 0,
             descricao_servico: descricao,
             categoria: CATEGORIAS.find(c => c.id === categoriaSel)?.nome || "Outros",
             status_servico: "Ativo"
           }
         ]);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       router.push({
         pathname: "/(main)/(modal)/sucesso",
@@ -81,8 +100,7 @@ export default function NovoServico() {
       });
 
     } catch (error: any) {
-      // Se der erro de "tabela não encontrada", é porque a Isa ainda não criou
-      Alert.alert("Sistema em Atualização", "O banco de dados ainda está sendo configurado. Tente novamente em breve.");
+      Alert.alert("Sistema em Atualização", "Ocorreu um erro ao salvar seu serviço. Tente novamente.");
       console.log("Erro Supabase:", error.message);
     } finally {
       setLoading(false);
@@ -136,7 +154,7 @@ export default function NovoServico() {
         <Text style={[styles.label, { color: theme.label }]}>VALOR ESTIMADO</Text>
         <TextInput 
           style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }]}
-          placeholder="R$ 0,00"
+          placeholder="Ex: 50.00"
           keyboardType="numeric"
           placeholderTextColor="#555"
           value={preco}

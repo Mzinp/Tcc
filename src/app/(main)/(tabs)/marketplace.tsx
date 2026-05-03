@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, ActivityIndicator } from "react-native";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "@/lib/supabase";
 
 const THEME_COLORS = {
   primary: "#2d79f3",
@@ -10,15 +11,13 @@ const THEME_COLORS = {
   darkBorder: "#252828"
 };
 
-const SERVICOS = [
-  { id: '1', nome: 'Manutenção Elétrica', prestador: 'Luigi (Apto 42)', preco: 'R$ 80,00', icon: 'construct-outline' },
-  { id: '2', nome: 'Aulas de Violão', prestador: 'Isabela (Apto 104)', preco: 'R$ 50/h', icon: 'musical-notes-outline' },
-  { id: '3', nome: 'Dog Walker', prestador: 'Mateus (Apto 12)', preco: 'R$ 30,00', icon: 'paw-outline' },
-];
-
 export default function Marketplace() {
   const router = useRouter();
   const [abaAtiva, setAbaAtiva] = useState('comprar');
+  
+  const [servicos, setServicos] = useState<any[]>([]);
+  const [meuId, setMeuId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const theme = {
     bg: THEME_COLORS.darkBg,
@@ -28,6 +27,65 @@ export default function Marketplace() {
     border: THEME_COLORS.darkBorder,
     accent: THEME_COLORS.primary
   };
+
+  async function carregarServicos() {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+      setMeuId(user.id);
+
+      // BUSCA ATUALIZADA: Agora pegamos descrição e telefone para o WhatsApp funcionar
+      const { data, error } = await supabase
+        .from("tb_servico")
+        .select(`
+          id_servico,
+          nome_servico,
+          valor_estimado,
+          descricao_servico,
+          id_morador,
+          tb_morador (
+            nome,
+            num_apartamento,
+            telefone
+          )
+        `);
+
+      if (data) {
+        const formatados = data.map((s: any) => ({
+          id: s.id_servico?.toString() || Math.random().toString(),
+          nome: s.nome_servico || "Serviço",
+          prestador: s.tb_morador 
+            ? `${s.tb_morador.nome.split(" ")[0]} (Apto ${s.tb_morador.num_apartamento || 'N/A'})` 
+            : "Vizinho",
+          preco: `R$ ${s.valor_estimado || '0,00'}`,
+          icon: "construct-outline",
+          id_morador: s.id_morador,
+          descricao: s.descricao_servico, // Passando a descrição para a próxima tela
+          telefone: s.tb_morador?.telefone // Passando o telefone para o WhatsApp
+        }));
+        
+        setServicos(formatados);
+      } else if (error) {
+        console.log("Erro ao buscar serviços:", error);
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarServicos();
+    }, [])
+  );
+
+  const servicosParaComprar = servicos; 
+  const meusAnuncios = servicos.filter(s => s.id_morador === meuId);
+  const dadosAtuais = abaAtiva === 'comprar' ? servicosParaComprar : meusAnuncios;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -52,14 +110,34 @@ export default function Marketplace() {
         </View>
       </View>
 
-      {abaAtiva === 'comprar' ? (
+      {loading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+        </View>
+      ) : dadosAtuais.length > 0 ? (
         <FlatList
-          data={SERVICOS}
+          data={dadosAtuais}
           keyExtractor={item => item.id}
           contentContainerStyle={{ padding: 25, paddingBottom: 150 }} 
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
-            <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <TouchableOpacity 
+              // FUNÇÃO DE CLIQUE NO CARD ADICIONADA AQUI
+              onPress={() => router.push({
+                pathname: "/(main)/(stack)/detalhe-servico",
+                params: {
+                  id: item.id,
+                  nome: item.nome,
+                  prestador: item.prestador,
+                  preco: item.preco,
+                  descricao: item.descricao,
+                  telefone: item.telefone,
+                  id_morador: item.id_morador
+                }
+              })}
+              activeOpacity={0.8}
+              style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
+            >
               <View style={[styles.iconBox, { backgroundColor: theme.bg }]}>
                 <Ionicons name={item.icon as any} size={24} color={theme.accent} />
               </View>
@@ -70,19 +148,10 @@ export default function Marketplace() {
                 <Text style={[styles.price, { color: theme.accent }]}>{item.preco}</Text>
               </View>
               
-              <TouchableOpacity 
-                style={[styles.hireBtn, { backgroundColor: theme.accent }]}
-                onPress={() => router.push({ 
-                  pathname: "/(main)/(modal)/sucesso", 
-                  params: { 
-                    mensagem: "O vizinho foi avisado! Ele entrará em contato pelo chat.",
-                    proximaTela: "/(main)/(tabs)/marketplace"
-                  } 
-                })}
-              >
-                <Text style={styles.hireBtnText}>Pedir</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={[styles.hireBtn, { backgroundColor: theme.accent }]}>
+                <Text style={styles.hireBtnText}>{abaAtiva === 'comprar' ? 'Pedir' : 'Ver'}</Text>
+              </View>
+            </TouchableOpacity>
           )}
         />
       ) : (
@@ -102,7 +171,6 @@ export default function Marketplace() {
         </View>
       )}
 
-      {/* Botão Flutuante (FAB) - Seguindo o Azul Vizzo */}
       <TouchableOpacity 
         style={[styles.fab, { backgroundColor: theme.accent }]}
         activeOpacity={0.9}
@@ -142,7 +210,7 @@ const styles = StyleSheet.create({
     right: 25, 
     width: 65, 
     height: 65, 
-    borderRadius: 22, // Quadrado arredondado moderno
+    borderRadius: 22, 
     justifyContent: 'center', 
     alignItems: 'center',
     elevation: 8,

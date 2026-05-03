@@ -1,97 +1,133 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o Calendário
 
 // Seus componentes
 import ArrowBack from '@/components/ArrowVoltar';
 import InputField from "@/components/InputField";
 import PrimaryButton from "@/components/PrimaryButton";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function CadastroReserva() {
   const router = useRouter();
-  const params = useLocalSearchParams(); // Recebe o nome da área vindo da tela anterior
+  const params = useLocalSearchParams(); 
   
   const [isDark, setIsDark] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [precoArea, setPrecoArea] = useState(0);
   
   // Estados do formulário
-  const [dataReserva, setDataReserva] = useState("");
+  const [dataObjeto, setDataObjeto] = useState(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dataFormatada, setDataFormatada] = useState("");
+  
   const [horario, setHorario] = useState("");
   const [observacao, setObservacao] = useState("");
 
   useEffect(() => {
-    const carregarTema = async () => {
-      const salvo = await AsyncStorage.getItem('@vizzo_theme');
-      if (salvo !== null) setIsDark(salvo === 'dark');
-    };
-    carregarTema();
+    carregarDadosIniciais();
   }, []);
+
+  async function carregarDadosIniciais() {
+    // Carrega Tema
+    const salvo = await AsyncStorage.getItem('@vizzo_theme');
+    if (salvo !== null) setIsDark(salvo === 'dark');
+
+    // Busca Preço Real da Área no Banco
+    try {
+        const { data, error } = await supabase
+            .from('tb_area_comum')
+            .select('valor_reserva')
+            .eq('id_area', params.areaId)
+            .single();
+        
+        if (data) setPrecoArea(data.valor_reserva || 0);
+    } catch (e) {
+        console.log("Erro ao buscar preço");
+    }
+  }
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    setShowCalendar(false); // Fecha o calendário
+    if (selectedDate) {
+      setDataObjeto(selectedDate);
+      // Formata para exibição visual (DD/MM/AAAA)
+      const dia = String(selectedDate.getDate()).padStart(2, '0');
+      const mes = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const ano = selectedDate.getFullYear();
+      setDataFormatada(`${dia}/${mes}/${ano}`);
+    }
+  };
 
   const theme = {
     bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
+    card: isDark ? COLORS.dark.card : COLORS.light.card,
     text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
+    border: isDark ? COLORS.dark.border : COLORS.light.border,
   };
 
   async function handleSalvarReserva() {
-  if (!dataReserva || !horario) {
-    Alert.alert("Atenção", "Preencha a data e o horário.");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // 1. VERIFICAÇÃO DE DISPONIBILIDADE (O Bloqueio)
-    const { data: conflito } = await supabase
-      .from('tb_reserva')
-      .select('id_reserva')
-      .eq('id_area', params.areaId) // Filtra pela área específica
-      .eq('data_reserva', dataReserva) // Mesma data
-      .neq('status', 'Recusado') // Só bloqueia se não estiver recusada
-      .single();
-
-    if (conflito) {
-      Alert.alert("Data Ocupada", "Já existe uma reserva ou solicitação para este dia.");
-      setLoading(false);
+    if (!dataFormatada || !horario) {
+      Alert.alert("Atenção", "Preencha a data e o horário.");
       return;
     }
 
-    // 2. BUSCA O PREÇO DEFINIDO PELO ADMIN
-    const { data: areaInfo } = await supabase
-      .from('tb_area_comum')
-      .select('valor_reserva, id_condominio')
-      .eq('id_area', params.areaId)
-      .single();
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // 1. VERIFICAÇÃO DE DISPONIBILIDADE
+      const dataParaBanco = dataObjeto.toISOString().split('T')[0]; // Converte para YYYY-MM-DD
 
-    // 3. SALVA A RESERVA COM O VALOR DA ÉPOCA
-    const { error } = await supabase.from('tb_reserva').insert([{
-      id_morador: user?.id, // ID do Morador
-      id_condominio: areaInfo?.id_condominio,
-      id_area: params.areaId,
-      area_comum: params.areaNome, 
-      data_reserva: dataReserva,
-      horario: horario,
-      valor_total: areaInfo?.valor_reserva || 0, // Salva o preço que o admin definiu
-      status: 'Pendente'
-    }]);
+      const { data: conflito } = await supabase
+        .from('tb_reserva')
+        .select('id_reserva')
+        .eq('id_area', params.areaId)
+        .eq('data_reserva', dataParaBanco)
+        .neq('status', 'Recusado')
+        .maybeSingle();
 
-    if (error) throw error;
+      if (conflito) {
+        Alert.alert("Data Ocupada", "Este espaço já está reservado para este dia.");
+        setLoading(false);
+        return;
+      }
 
-    Alert.alert("Sucesso", `Reserva solicitada! Valor: R$ ${areaInfo?.valor_reserva}`);
-    router.back();
+      // 2. BUSCA ID DO CONDOMÍNIO
+      const { data: areaInfo } = await supabase
+        .from('tb_area_comum')
+        .select('id_condominio')
+        .eq('id_area', params.areaId)
+        .single();
 
-  } catch (error) {
-    console.log(error);
-    Alert.alert("Erro", "Falha na comunicação com o servidor.");
-  } finally {
-    setLoading(false);
+      // 3. SALVA A RESERVA
+      const { error } = await supabase.from('tb_reserva').insert([{
+        id_morador: user?.id,
+        id_condominio: areaInfo?.id_condominio,
+        id_area: params.areaId,
+        area_comum: params.areaNome, 
+        data_reserva: dataParaBanco,
+        horario: horario,
+        valor_total: precoArea, 
+        status: 'Pendente'
+      }]);
+
+      if (error) throw error;
+
+      Alert.alert("Sucesso", "Sua reserva foi enviada para aprovação!");
+      router.back();
+
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Erro", "Falha ao salvar reserva.");
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -109,13 +145,27 @@ export default function CadastroReserva() {
         </View>
 
         <View style={{ marginTop: 20 }}>
-          <InputField 
-            label="DATA (DD/MM/AAAA)"
-            placeholder="Ex: 25/12/2026"
-            value={dataReserva}
-            onChangeText={setDataReserva}
-            icon="calendar-outline"
-          />
+          {/* CAMPO DE DATA COM CALENDÁRIO */}
+          <Text style={styles.label}>DATA DA RESERVA</Text>
+          <TouchableOpacity 
+            style={[styles.calendarTrigger, { backgroundColor: theme.card, borderColor: theme.border }]} 
+            onPress={() => setShowCalendar(true)}
+          >
+            <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+            <Text style={[styles.calendarText, { color: dataFormatada ? theme.text : '#555' }]}>
+              {dataFormatada || "Selecionar data no calendário"}
+            </Text>
+          </TouchableOpacity>
+
+          {showCalendar && (
+            <DateTimePicker
+              value={dataObjeto}
+              mode="date"
+              display="calendar"
+              minimumDate={new Date()} // Não permite reservar datas passadas
+              onChange={onChangeDate}
+            />
+          )}
 
           <InputField 
             label="HORÁRIO"
@@ -127,12 +177,21 @@ export default function CadastroReserva() {
 
           <InputField 
             label="OBSERVAÇÕES (OPCIONAL)"
-            placeholder="Ex: Aniversário de 15 anos..."
+            placeholder="Ex: Aniversário..."
             value={observacao}
             onChangeText={setObservacao}
             icon="document-text-outline"
             multiline
           />
+        </View>
+
+        {/* RESUMO DO PREÇO DINÂMICO */}
+        <View style={[styles.priceCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <View>
+                <Text style={styles.priceLabel}>Valor do Espaço</Text>
+                <Text style={[styles.priceValue, { color: COLORS.primary }]}>R$ {precoArea.toFixed(2)}</Text>
+            </View>
+            <Ionicons name="cash-outline" size={30} color={COLORS.primary} />
         </View>
 
         <View style={{ marginTop: 30 }}>
@@ -147,7 +206,7 @@ export default function CadastroReserva() {
         </View>
 
         <Text style={styles.footerNote}>
-          *A reserva está sujeita a aprovação do síndico e às normas do regimento interno.
+          *A reserva está sujeita a aprovação do síndico. O valor será incluído no próximo boleto do condomínio.
         </Text>
       </ScrollView>
     </View>
@@ -156,31 +215,37 @@ export default function CadastroReserva() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { 
-    paddingTop: 60, 
-    paddingHorizontal: 20, 
-    flexDirection: 'row', 
-    alignItems: 'center',
-    marginBottom: 10
-  },
+  header: { paddingTop: 60, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   headerTitle: { fontSize: 22, fontWeight: 'bold', marginLeft: 15 },
   content: { padding: 25 },
   infoBox: { marginBottom: 10 },
   label: { fontSize: 10, fontWeight: '900', color: COLORS.primary, marginBottom: 8, letterSpacing: 1 },
-  areaBadge: { 
-    backgroundColor: 'rgba(45, 121, 243, 0.1)', 
-    padding: 15, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: COLORS.primary 
-  },
+  areaBadge: { backgroundColor: 'rgba(45, 121, 243, 0.1)', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary },
   areaText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 16 },
-  footerNote: { 
-    textAlign: 'center', 
-    color: '#8b8e98', 
-    fontSize: 12, 
-    marginTop: 25, 
-    lineHeight: 18,
-    paddingHorizontal: 10
-  }
+  
+  // Estilos do acionador do calendário
+  calendarTrigger: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 18, 
+    borderRadius: 15, 
+    borderWidth: 1, 
+    marginBottom: 25 
+  },
+  calendarText: { marginLeft: 12, fontSize: 16 },
+
+  // Card de Preço
+  priceCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 10
+  },
+  priceLabel: { color: '#8b8e98', fontSize: 12, fontWeight: 'bold', marginBottom: 5 },
+  priceValue: { fontSize: 22, fontWeight: 'bold' },
+
+  footerNote: { textAlign: 'center', color: '#8b8e98', fontSize: 12, marginTop: 25, lineHeight: 18, paddingHorizontal: 10 }
 });

@@ -40,20 +40,59 @@ export default function GestaoArea() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('tb_area_comum')
-        .update({
-          nome: nome,
-          valor_reserva: parseFloat(preco.replace(',', '.'))
-        })
-        .eq('id_area', idArea);
+      // 1. Descobre quem é o administrador logado e pega o ID do condomínio dele
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
-      if (error) throw error;
+      const { data: adminData } = await supabase
+        .from("tb_administrador")
+        .select("id_condominio")
+        .eq("id_administrador", user.id)
+        .maybeSingle();
 
-      Alert.alert("Sucesso", "Configurações da área atualizadas!");
-      router.back();
-    } catch (error) {
-      Alert.alert("Erro", "Não foi possível atualizar.");
+      const idCondominio = adminData?.id_condominio;
+
+      if (!idCondominio) {
+        Alert.alert("Erro", "Condomínio não encontrado para este perfil.");
+        setLoading(false);
+        return;
+      }
+
+      // Trata o número para não dar erro com vírgula no banco
+      const precoFormatado = parseFloat(preco.replace(',', '.'));
+
+      // 2. Verifica se está editando uma área existente ou criando uma nova
+      if (idArea) {
+        // MODO EDIÇÃO
+        const { error } = await supabase
+          .from('tb_area_comum')
+          .update({
+            nome: nome,
+            valor_reserva: precoFormatado
+          })
+          .eq('id_area', idArea);
+
+        if (error) throw error;
+        Alert.alert("Sucesso", "Configurações da área atualizadas!");
+
+      } else {
+        // MODO CRIAÇÃO (Adiciona o id_condominio para o morador poder ver!)
+        const { error } = await supabase
+          .from('tb_area_comum')
+          .insert({
+            nome: nome,
+            valor_reserva: precoFormatado,
+            id_condominio: idCondominio // A mágica acontece aqui!
+          });
+
+        if (error) throw error;
+        Alert.alert("Sucesso", "Nova área comum cadastrada!");
+      }
+
+      router.back(); // Volta para a tela anterior
+    } catch (error: any) {
+      console.log("Erro ao salvar área:", error);
+      Alert.alert("Erro", "Não foi possível salvar a área.");
     } finally {
       setLoading(false);
     }
@@ -85,7 +124,7 @@ export default function GestaoArea() {
 
         <View style={{ marginTop: 20 }}>
           {loading ? (
-            <ActivityIndicator color={COLORS.primary} />
+            <ActivityIndicator size="large" color={COLORS.primary} />
           ) : (
             <PrimaryButton title="SALVAR ALTERAÇÕES" onPress={handleSalvarAlteracoes} />
           )}

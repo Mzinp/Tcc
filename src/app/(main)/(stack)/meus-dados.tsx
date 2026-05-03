@@ -41,13 +41,14 @@ export default function MeusDados() {
             .maybeSingle();
 
           if (admin) {
+            // Agora pegando os dados reais da tabela do Administrador
             setUserProfile({
-              exibirNome: admin.nome,
+              exibirNome: admin.nome || "Administrador",
               exibirEmail: user.email,
-              exibirDoc: "Acesso Administrativo",
-              exibirTel: "N/A",
-              exibirBloco: "ADM",
-              exibirApto: "Sistema",
+              exibirDoc: admin.cpf || "N/A", 
+              exibirTel: admin.telefone || "N/A",
+              exibirBloco: admin.bloco || "ADM",
+              exibirApto: admin.num_apartamento || "Sistema",
               tipo: "Administrador"
             });
           } else {
@@ -59,14 +60,14 @@ export default function MeusDados() {
               .maybeSingle();
 
             if (morador) {
-              // Mapeamento baseado no seu SQL (Cpf, Nome, Bloco, Apartamento, Telefone)
+              // Pegando os dados reais da tabela do Morador
               setUserProfile({
-                exibirNome: morador.Nome || morador.nome,
-                exibirEmail: morador.Email || morador.email || user.email,
-                exibirDoc: morador.Cpf || morador.CPF || morador.cpf,
-                exibirTel: morador.Telefone || morador.telefone,
-                exibirBloco: morador.Bloco || morador.bloco,
-                exibirApto: morador.Apartamento || morador.apartamento,
+                exibirNome: morador.nome || "Morador",
+                exibirEmail: user.email, 
+                exibirDoc: morador.cpf || "N/A",
+                exibirTel: morador.telefone || "N/A",
+                exibirBloco: morador.bloco || "N/A",
+                exibirApto: morador.num_apartamento || "N/A",
                 tipo: "Morador Verificado"
               });
             }

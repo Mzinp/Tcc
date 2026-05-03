@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { 
   View, 
   Text, 
@@ -21,13 +21,14 @@ export default function TestChatGeral() {
   const [mensagem, setMensagem] = useState("");
   const [mensagens, setMensagens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const [userId, setUserId] = useState<string | null>(null);
-  const [userName, setUserName] = useState("Morador"); // Estado para o nome real
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [userName, setUserName] = useState("Vizinho"); 
+  const [idCondominio, setIdCondominio] = useState<string | null>(null);
 
+  const scrollViewRef = useRef<ScrollView>(null);
   const LIMITE_CARACTERES = 500;
 
-  // Tema Full Black Fixo
   const theme = {
     bg: "#0f1111",
     header: "#1a1d1d",
@@ -41,59 +42,97 @@ export default function TestChatGeral() {
   };
 
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
       obterSessaoEPefil();
     }, [])
   );
 
   useEffect(() => {
-    buscarMensagens();
+    if (!idCondominio) return;
 
-    // Canal de Realtime
+    buscarMensagens(idCondominio);
+
     const channel = supabase
-      .channel('chat_condominio')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tb_chat' }, 
+      .channel(`chat_condominio_${idCondominio}`)
+      .on('postgres_changes', { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'tb_chat',
+          filter: `id_condominio=eq.${idCondominio}` 
+        }, 
         (payload) => {
-          setMensagens((prev) => [...prev, payload.new]);
+          setMensagens((prev) => {
+            // Verificação de duplicidade mais rigorosa
+            const jaExiste = prev.some(m => m.id === payload.new.id);
+            if (jaExiste) return prev;
+            return [...prev, payload.new];
+          });
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [idCondominio]);
 
   async function obterSessaoEPefil() {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
-      // Busca o nome real do morador para o chat
-      const { data } = await supabase
-        .from("tb_morador")
-        .select("Nome")
-        .eq("id_morador", user.id)
-        .single();
-      
-      if (data?.Nome) setUserName(data.Nome);
+    if (!user) return;
+    
+    setUserId(user.id);
+
+    const { data: adminData } = await supabase
+      .from("tb_administrador")
+      .select("nome, id_condominio")
+      .eq("id_administrador", user.id)
+      .maybeSingle();
+    
+    if (adminData && adminData.id_condominio) {
+      setUserName(adminData.nome || "Administrador");
+      setIdCondominio(adminData.id_condominio);
+      return;
+    }
+
+    const { data: moradorData } = await supabase
+      .from("tb_morador")
+      .select("nome, id_condominio")
+      .eq("id_morador", user.id)
+      .maybeSingle();
+    
+    if (moradorData && moradorData.id_condominio) {
+      setUserName(moradorData.nome || "Morador");
+      setIdCondominio(moradorData.id_condominio);
     }
   }
 
-  async function buscarMensagens() {
-    const { data } = await supabase.from('tb_chat').select('*').order('created_at', { ascending: true });
+  async function buscarMensagens(idCondom: string) {
+    const { data } = await supabase
+      .from('tb_chat')
+      .select('*')
+      .eq('id_condominio', idCondom)
+      .order('created_at', { ascending: true });
+      
     if (data) setMensagens(data);
     setLoading(false);
   }
 
   async function enviarMensagem() {
-    if (!mensagem.trim() || mensagem.length > LIMITE_CARACTERES || !userId) return;
+    if (!mensagem.trim() || mensagem.length > LIMITE_CARACTERES || !userId || !idCondominio) return;
+
+    const textoParaEnviar = mensagem.trim();
+    setMensagem(""); 
 
     const { error } = await supabase.from('tb_chat').insert([{
       id_autor: userId,
-      texto: mensagem.trim(),
-      nome_autor: userName, // Agora envia o nome real buscado do banco
-      apto_autor: "Vizzo"
+      id_condominio: idCondominio,
+      texto: textoParaEnviar,
+      nome_autor: userName.split(" ")[0],
+      apto_autor: "Vizzo" 
     }]);
 
-    if (!error) setMensagem("");
+    if (error) {
+      console.log("Erro ao enviar:", error);
+      setMensagem(textoParaEnviar);
+    }
   }
 
   return (
@@ -115,7 +154,7 @@ export default function TestChatGeral() {
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <ActivityIndicator color={COLORS.primary}/>
+          <ActivityIndicator size="large" color={COLORS.primary}/>
         </View>
       ) : (
         <ScrollView 
@@ -123,15 +162,21 @@ export default function TestChatGeral() {
           contentContainerStyle={styles.chatArea}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
-          {mensagens.map((msg) => {
+          {mensagens.map((msg, index) => {
             const ehEu = msg.id_autor === userId;
+            
+            // CORREÇÃO DA KEY: Usa o ID do banco ou um fallback único baseado no índice e tempo
+            const uniqueKey = msg.id ? msg.id.toString() : `temp-${index}-${new Date().getTime()}`;
+
             return (
-              <View key={msg.id} style={[styles.msgContainer, ehEu ? styles.msgEu : styles.msgOutro]}>
+              <View key={uniqueKey} style={[styles.msgContainer, ehEu ? styles.msgEu : styles.msgOutro]}>
                 {!ehEu && <Text style={[styles.userLabel, { color: "#ff8c00" }]}>{msg.nome_autor}</Text>}
                 <View style={[styles.bubble, { backgroundColor: ehEu ? theme.bubbleEu : theme.bubbleOutro }]}>
                   <Text style={[styles.msgText, { color: "#fff" }]}>{msg.texto}</Text>
                   <Text style={[styles.horaText, { color: "rgba(255,255,255,0.5)" }]}>
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {msg.created_at 
+                      ? new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
               </View>
