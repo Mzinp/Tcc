@@ -24,7 +24,7 @@ export default function CadastroMorador() {
   const [senha, setSenha] = useState("");
   const [apartamento, setApartamento] = useState("");
   const [bloco, setBloco] = useState("");
-  const [codigoCondominio, setCodigoCondominio] = useState(""); 
+  const [codigoCondominio, goCondominio] = useState(""); 
   const [loading, setLoading] = useState(false);
   
   // NOVO: Estado para controlar a aceitação dos termos (LGPD)
