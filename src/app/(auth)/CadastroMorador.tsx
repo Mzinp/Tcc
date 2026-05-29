@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons"; // Importamos os ícones para o Checkbox!
+import { FormularioSelecaoNative } from "@components/input/autoCompletar"
+
 
 export default function CadastroMorador() {
   const router = useRouter();
