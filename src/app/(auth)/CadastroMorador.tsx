@@ -13,12 +13,12 @@ import {
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons"; // Importamos os ícones para o Checkbox!
-import { FormularioSelecaoNative } from "@components/input/autoCompletar"
+import { FormularioSelecaoNative } from "@components/input/autoCompletar";
 
 
 export default function CadastroMorador() {
   const router = useRouter();
-  
+
   // States do Morador
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -26,44 +26,44 @@ export default function CadastroMorador() {
   const [senha, setSenha] = useState("");
   const [apartamento, setApartamento] = useState("");
   const [bloco, setBloco] = useState("");
-  const [codigoCondominio, setCodigoCondominio] = useState(""); 
+  const [codigoCondominio, setCodigoCondominio] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   // NOVO: Estado para controlar a aceitação dos termos (LGPD)
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
   // Função para CPF: 000.000.000-00
-const maskCPF = (value: string) => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
-    .replace(/(-\d{2})\d+?$/, "$1");
-};
+  const maskCPF = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+      .replace(/(-\d{2})\d+?$/, "$1");
+  };
 
-// Função para Telefone: (00) 00000-0000
-const maskPhone = (value: string) => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2")
-    .replace(/(-\d{4})\d+?$/, "$1");
-};
+  // Função para Telefone: (00) 00000-0000
+  const maskPhone = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .replace(/(-\d{4})\d+?$/, "$1");
+  };
 
-// No seu TextInput de CPF, use assim:
-<TextInput
-  value={cpf}
-  onChangeText={(text) => setCpf(maskCPF(text))}
-  maxLength={14}
-  keyboardType="numeric"
-/>
+  // No seu TextInput de CPF, use assim:
+  <TextInput
+    value={cpf}
+    onChangeText={(text) => setCpf(maskCPF(text))}
+    maxLength={14}
+    keyboardType="numeric"
+  />
 
   async function handleCadastro() {
     // NOVA TRAVA: Verificação da LGPD antes de qualquer coisa
     if (!aceitouTermos) {
       Alert.alert(
-        "Termos Obrigatórios", 
+        "Termos Obrigatórios",
         "Para prosseguir, você precisa ler e concordar com os Termos de Uso e Política de Privacidade."
       );
       return;
@@ -111,7 +111,7 @@ const maskPhone = (value: string) => {
           Alert.alert("Erro no cadastro", authError.message);
         }
         setLoading(false);
-        return; 
+        return;
       }
 
       // 3. Salvar na tb_morador com o ID do condomínio encontrado
@@ -123,7 +123,7 @@ const maskPhone = (value: string) => {
             cpf: cpf.replace(/\D/g, ""),
             apartamento,
             bloco,
-            id_condominio: condoData.id_condominio, 
+            id_condominio: condoData.id_condominio,
           },
         ]);
 
@@ -139,9 +139,9 @@ const maskPhone = (value: string) => {
         // 4. REDIRECIONAMENTO PARA A TELA DE SUCESSO (E DEPOIS LOGIN)
         router.replace({
           pathname: "/(main)/(modal)/sucesso",
-          params: { 
+          params: {
             mensagem: "Conta criada com sucesso! Faça login para continuar.",
-            proximaTela: "/(auth)/login" 
+            proximaTela: "/(auth)/login"
           }
         });
       }
@@ -163,14 +163,35 @@ const maskPhone = (value: string) => {
 
         <View style={styles.form}>
           <Text style={styles.label}>CÓDIGO DO CONDOMÍNIO</Text>
-          <TextInput
-            style={[styles.input, { borderColor: "#2d79f3" }]} 
-            placeholder="Ex: VIZZO-0001"
-            placeholderTextColor="#666"
-            value={codigoCondominio}
-            onChangeText={setCodigoCondominio}
-            autoCapitalize="characters"
-          />
+<FormularioSelecaoNative
+
+  value={codigoCondominio}
+
+  onChangeText={setCodigoCondominio}
+
+  placeholder="Ex: VIZZO-0001"
+
+  placeholderTextColor="#666"
+
+  autoCapitalize="characters"
+
+  estiloInputExterno={[
+    styles.input,
+    { borderColor: "#2d79f3" }
+  ]}
+
+  estiloListaExterna={{
+    backgroundColor: "#1a1d1d"
+  }}
+
+  estiloItemExterno={{
+    borderBottomColor: "#353838"
+  }}
+
+  estiloTextoItemExterno={{
+    color: "#fff"
+  }}
+/>
 
           <Text style={styles.label}>NOME COMPLETO</Text>
           <TextInput
@@ -235,8 +256,8 @@ const maskPhone = (value: string) => {
           />
 
           {/* NOVO: CHECKBOX DE TERMOS E CONDIÇÕES (LGPD) */}
-          <TouchableOpacity 
-            style={styles.checkboxContainer} 
+          <TouchableOpacity
+            style={styles.checkboxContainer}
             onPress={() => setAceitouTermos(!aceitouTermos)}
             activeOpacity={0.7}
           >
@@ -248,8 +269,8 @@ const maskPhone = (value: string) => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.button, (!aceitouTermos || loading) && { opacity: 0.5 }]} 
+          <TouchableOpacity
+            style={[styles.button, (!aceitouTermos || loading) && { opacity: 0.5 }]}
             onPress={handleCadastro}
             disabled={loading} // O botão continua clicável para dar o alerta se a pessoa não marcar a caixa!
           >
@@ -269,14 +290,14 @@ const styles = StyleSheet.create({
   form: { gap: 5 },
   label: { color: "#8b8e98", fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 5 },
   input: { backgroundColor: "#1a1d1d", borderWidth: 1, borderColor: "#353838", borderRadius: 12, height: 55, paddingHorizontal: 15, color: "#fff", marginBottom: 15 },
-  
+
   /* ESTILOS NOVOS DO CHECKBOX */
   checkboxContainer: { flexDirection: "row", alignItems: "center", marginTop: 5, marginBottom: 15, paddingRight: 20 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#353838", backgroundColor: "#1a1d1d", justifyContent: "center", alignItems: "center", marginRight: 12 },
   checkboxAtivo: { backgroundColor: "#2d79f3", borderColor: "#2d79f3" },
   checkboxText: { color: "#8b8e98", fontSize: 12, lineHeight: 18, flex: 1 },
   linkText: { color: "#2d79f3", fontWeight: "bold" },
-  
+
   button: { backgroundColor: "#2d79f3", height: 60, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 10 },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
