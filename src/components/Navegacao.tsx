@@ -35,7 +35,6 @@ export default function Navegacao() {
   const menuItems = [
     { name: "Início", icon: "home", route: "/home" },
     { name: "Mercado", icon: "cart", route: "/marketplace" },
-    { name: "Chat", icon: "chatbubbles", route: "/mensagens" }, 
     { name: "Perfil", icon: "person", route: "/perfil" }, 
   ];
 

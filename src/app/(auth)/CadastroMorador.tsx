@@ -15,7 +15,6 @@ import { supabase } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons"; // Importamos os ícones para o Checkbox!
 import { FormularioSelecaoNative } from "@components/input/autoCompletar";
 
-
 export default function CadastroMorador() {
   const router = useRouter();
 
@@ -57,14 +56,14 @@ export default function CadastroMorador() {
     onChangeText={(text) => setCpf(maskCPF(text))}
     maxLength={14}
     keyboardType="numeric"
-  />
+  />;
 
   async function handleCadastro() {
     // NOVA TRAVA: Verificação da LGPD antes de qualquer coisa
     if (!aceitouTermos) {
       Alert.alert(
         "Termos Obrigatórios",
-        "Para prosseguir, você precisa ler e concordar com os Termos de Uso e Política de Privacidade."
+        "Para prosseguir, você precisa ler e concordar com os Termos de Uso e Política de Privacidade.",
       );
       return;
     }
@@ -85,7 +84,10 @@ export default function CadastroMorador() {
         .single();
 
       if (condoError || !condoData) {
-        Alert.alert("Erro", "Código de condomínio não encontrado. Verifique com seu síndico.");
+        Alert.alert(
+          "Erro",
+          "Código de condomínio não encontrado. Verifique com seu síndico.",
+        );
         setLoading(false);
         return;
       }
@@ -103,9 +105,12 @@ export default function CadastroMorador() {
             "Conta Existente",
             "Este e-mail já está cadastrado no Vizzo.",
             [
-              { text: "Fazer Login", onPress: () => router.push("/(auth)/login") },
-              { text: "Tentar outro", style: "cancel" }
-            ]
+              {
+                text: "Fazer Login",
+                onPress: () => router.push("/(auth)/login"),
+              },
+              { text: "Tentar outro", style: "cancel" },
+            ],
           );
         } else {
           Alert.alert("Erro no cadastro", authError.message);
@@ -141,8 +146,8 @@ export default function CadastroMorador() {
           pathname: "/(main)/(modal)/sucesso",
           params: {
             mensagem: "Conta criada com sucesso! Faça login para continuar.",
-            proximaTela: "/(auth)/login"
-          }
+            proximaTela: "/(auth)/login",
+          },
         });
       }
     } catch (error: any) {
@@ -159,39 +164,29 @@ export default function CadastroMorador() {
     >
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Olá, Morador!</Text>
-        <Text style={styles.subtitle}>Crie sua conta para acessar o Vizzo do seu prédio.</Text>
+        <Text style={styles.subtitle}>
+          Crie sua conta para acessar o Vizzo do seu prédio.
+        </Text>
 
         <View style={styles.form}>
           <Text style={styles.label}>CÓDIGO DO CONDOMÍNIO</Text>
-<FormularioSelecaoNative
-
-  value={codigoCondominio}
-
-  onChangeText={setCodigoCondominio}
-
-  placeholder="Ex: VIZZO-0001"
-
-  placeholderTextColor="#666"
-
-  autoCapitalize="characters"
-
-  estiloInputExterno={[
-    styles.input,
-    { borderColor: "#2d79f3" }
-  ]}
-
-  estiloListaExterna={{
-    backgroundColor: "#1a1d1d"
-  }}
-
-  estiloItemExterno={{
-    borderBottomColor: "#353838"
-  }}
-
-  estiloTextoItemExterno={{
-    color: "#fff"
-  }}
-/>
+          <FormularioSelecaoNative
+            value={codigoCondominio}
+            onChangeText={setCodigoCondominio}
+            placeholder="Ex: VIZZO-0001"
+            placeholderTextColor="#666"
+            autoCapitalize="characters"
+            estiloInputExterno={[styles.input, { borderColor: "#2d79f3" }]}
+            estiloListaExterna={{
+              backgroundColor: "#1a1d1d",
+            }}
+            estiloItemExterno={{
+              borderBottomColor: "#353838",
+            }}
+            estiloTextoItemExterno={{
+              color: "#fff",
+            }}
+          />
 
           <Text style={styles.label}>NOME COMPLETO</Text>
           <TextInput
@@ -261,20 +256,31 @@ export default function CadastroMorador() {
             onPress={() => setAceitouTermos(!aceitouTermos)}
             activeOpacity={0.7}
           >
-            <View style={[styles.checkbox, aceitouTermos && styles.checkboxAtivo]}>
-              {aceitouTermos && <Ionicons name="checkmark" size={14} color="#fff" />}
+            <View
+              style={[styles.checkbox, aceitouTermos && styles.checkboxAtivo]}
+            >
+              {aceitouTermos && (
+                <Ionicons name="checkmark" size={14} color="#fff" />
+              )}
             </View>
             <Text style={styles.checkboxText}>
-              Li e concordo com os <Text style={styles.linkText}>Termos de Uso</Text> e <Text style={styles.linkText}>Política de Privacidade</Text>.
+              Li e concordo com os{" "}
+              <Text style={styles.linkText}>Termos de Uso</Text> e{" "}
+              <Text style={styles.linkText}>Política de Privacidade</Text>.
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, (!aceitouTermos || loading) && { opacity: 0.5 }]}
+            style={[
+              styles.button,
+              (!aceitouTermos || loading) && { opacity: 0.5 },
+            ]}
             onPress={handleCadastro}
             disabled={loading} // O botão continua clicável para dar o alerta se a pessoa não marcar a caixa!
           >
-            <Text style={styles.buttonText}>{loading ? "PROCESSANDO..." : "CRIAR MINHA CONTA"}</Text>
+            <Text style={styles.buttonText}>
+              {loading ? "PROCESSANDO..." : "CRIAR MINHA CONTA"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -286,18 +292,61 @@ const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: "#0f1111" },
   container: { padding: 30, paddingTop: 60, paddingBottom: 60 },
   title: { color: "#fff", fontSize: 28, fontWeight: "800" },
-  subtitle: { color: "#2d79f3", fontSize: 14, marginBottom: 30, fontWeight: "500" },
+  subtitle: {
+    color: "#2d79f3",
+    fontSize: 14,
+    marginBottom: 30,
+    fontWeight: "500",
+  },
   form: { gap: 5 },
-  label: { color: "#8b8e98", fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 5 },
-  input: { backgroundColor: "#1a1d1d", borderWidth: 1, borderColor: "#353838", borderRadius: 12, height: 55, paddingHorizontal: 15, color: "#fff", marginBottom: 15 },
+  label: {
+    color: "#8b8e98",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginBottom: 5,
+  },
+  input: {
+    backgroundColor: "#1a1d1d",
+    borderWidth: 1,
+    borderColor: "#353838",
+    borderRadius: 12,
+    height: 55,
+    paddingHorizontal: 15,
+    color: "#fff",
+    marginBottom: 15,
+  },
 
   /* ESTILOS NOVOS DO CHECKBOX */
-  checkboxContainer: { flexDirection: "row", alignItems: "center", marginTop: 5, marginBottom: 15, paddingRight: 20 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#353838", backgroundColor: "#1a1d1d", justifyContent: "center", alignItems: "center", marginRight: 12 },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    marginBottom: 15,
+    paddingRight: 20,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#353838",
+    backgroundColor: "#1a1d1d",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
   checkboxAtivo: { backgroundColor: "#2d79f3", borderColor: "#2d79f3" },
   checkboxText: { color: "#8b8e98", fontSize: 12, lineHeight: 18, flex: 1 },
   linkText: { color: "#2d79f3", fontWeight: "bold" },
 
-  button: { backgroundColor: "#2d79f3", height: 60, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 10 },
+  button: {
+    backgroundColor: "#2d79f3",
+    height: 60,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+  },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
