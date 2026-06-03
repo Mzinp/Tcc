@@ -1,15 +1,15 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
 import { supabase } from "@/lib/supabase";
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook global de tema
 
 export default function Comunicados() {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(true);
+  const { theme } = useAppTheme(); // Consumindo o cérebro de temas do app
   const [loading, setLoading] = useState(true);
   const [comunicados, setComunicados] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -48,21 +48,8 @@ export default function Comunicados() {
   useFocusEffect(
     useCallback(() => {
       carregarDados();
-      const carregarTema = async () => {
-        const salvo = await AsyncStorage.getItem('@vizzo_theme');
-        if (salvo !== null) setIsDark(salvo === 'dark');
-      };
-      carregarTema();
     }, [])
   );
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? COLORS.dark.border : COLORS.light.border
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -80,7 +67,7 @@ export default function Comunicados() {
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 30 }} />
+          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 30 }} />
         ) : (
           <>
             {comunicados.length === 0 ? (
@@ -95,20 +82,20 @@ export default function Comunicados() {
                       <Ionicons 
                         name={item.tipo === 'Urgente' ? "alert-circle" : "information-circle"} 
                         size={14} 
-                        color={item.tipo === 'Urgente' ? COLORS.red : COLORS.primary} 
+                        color={item.tipo === 'Urgente' ? COLORS.red : theme.primary} 
                       />
-                      <Text style={[styles.typeText, { color: item.tipo === 'Urgente' ? COLORS.red : COLORS.primary }]}>
+                      <Text style={[styles.typeText, { color: item.tipo === 'Urgente' ? COLORS.red : theme.primary }]}>
                         {item.tipo.toUpperCase()}
                       </Text>
                     </View>
-                    <Text style={styles.dateText}>{new Date(item.data_publicacao).toLocaleDateString('pt-BR')}</Text>
+                    <Text style={[styles.dateText, { color: theme.subText }]}>{new Date(item.data_publicacao).toLocaleDateString('pt-BR')}</Text>
                   </View>
 
                   <Text style={[styles.itemTitle, { color: theme.text }]}>{item.titulo}</Text>
                   <Text style={[styles.itemContent, { color: theme.subText }]}>{item.conteudo}</Text>
                   
-                  <View style={styles.footer}>
-                    <Text style={styles.authorText}>Por: {item.autor || 'Administração'}</Text>
+                  <View style={[styles.footer, { borderTopColor: theme.border }]}>
+                    <Text style={[styles.authorText, { color: theme.subText }]}>Por: {item.autor || 'Administração'}</Text>
                   </View>
                 </View>
               ))
@@ -120,7 +107,7 @@ export default function Comunicados() {
 
       {isAdmin && (
         <TouchableOpacity 
-          style={styles.fab} 
+          style={[styles.fab, { backgroundColor: theme.primary }]} 
           onPress={() => router.push("/(main)/(stack)/cadastrocomunicados")}
         >
           <Ionicons name="megaphone" size={28} color="white" />
@@ -139,14 +126,14 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: 'bold' },
   subtitle: { fontSize: 14, marginTop: 5 },
   emptyText: { textAlign: 'center', marginTop: 50, fontSize: 14 },
-  card: { padding: 20, borderRadius: 22, borderWidth: 1, marginBottom: 15, elevation: 2 },
+  card: { padding: 20, borderRadius: 22, borderWidth: 1, marginBottom: 15, elevation: 2, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 8 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   typeBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   typeText: { fontSize: 10, fontWeight: 'bold', marginLeft: 5 },
-  dateText: { fontSize: 11, color: '#888' },
+  dateText: { fontSize: 11 },
   itemTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
   itemContent: { fontSize: 14, lineHeight: 20 },
-  footer: { marginTop: 15, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: 'rgba(139, 142, 152, 0.2)' },
-  authorText: { fontSize: 11, color: '#888', fontStyle: 'italic' },
-  fab: { position: 'absolute', right: 25, bottom: 30, width: 65, height: 65, borderRadius: 32.5, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center', elevation: 8 }
+  footer: { marginTop: 15, paddingTop: 10, borderTopWidth: 0.5 },
+  authorText: { fontSize: 11, fontStyle: 'italic' },
+  fab: { position: 'absolute', right: 25, bottom: 30, width: 65, height: 65, borderRadius: 32.5, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 5 }
 });

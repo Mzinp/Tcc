@@ -11,20 +11,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import ArrowBack from '@/components/ArrowVoltar';
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 export default function MeusDados() {
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
-
-  // Tema Full Black Ajustado (Card um pouco mais escuro para elegância)
-  const theme = {
-    bg: "#0f1111",
-    card: "#1a1d1d",
-    text: "#ffffff",
-    subText: "#8b8e98",
-    accent: "#2d79f3",
-    border: "#252828"
-  };
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -86,7 +78,7 @@ export default function MeusDados() {
   const InfoItem = ({ label, value, icon }: { label: string, value: string, icon: any }) => (
     <View style={[styles.infoCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <View style={[styles.iconCircle, { backgroundColor: theme.bg }]}>
-        <Ionicons name={icon} size={20} color={theme.accent} />
+        <Ionicons name={icon} size={20} color={theme.primary} />
       </View>
       <View style={styles.infoTextContainer}>
         <Text style={[styles.label, { color: theme.subText }]}>{label}</Text>
@@ -106,17 +98,17 @@ export default function MeusDados() {
 
       {loading ? (
         <View style={styles.loader}>
-          <ActivityIndicator size="large" color={theme.accent} />
+          <ActivityIndicator size="large" color={theme.primary} />
           <Text style={{ color: theme.subText, marginTop: 15 }}>Sincronizando com banco...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.profileSection}>
             <View style={[styles.avatarCircle, { backgroundColor: theme.card }]}>
-              <Ionicons name="person" size={50} color={theme.accent} />
+              <Ionicons name="person" size={50} color={theme.primary} />
             </View>
             <Text style={[styles.userName, { color: theme.text }]}>{userProfile?.exibirNome}</Text>
-            <Text style={[styles.userRole, { color: theme.accent }]}>{userProfile?.tipo}</Text>
+            <Text style={[styles.userRole, { color: theme.primary }]}>{userProfile?.tipo}</Text>
           </View>
 
           <View style={styles.detailsList}>

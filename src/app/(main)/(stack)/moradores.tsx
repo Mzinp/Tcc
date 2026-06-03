@@ -1,7 +1,6 @@
 import { COLORS } from "@/consts/colors";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -12,9 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 export default function Moradores() {
-  const [isDark, setIsDark] = useState(true);
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
   const [listaMoradores, setListaMoradores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -95,25 +95,8 @@ export default function Moradores() {
   useFocusEffect(
     useCallback(() => {
       carregarLista();
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem("@vizzo_theme");
-          if (salvo !== null) setIsDark(salvo === "dark");
-        } catch (e) {
-          console.log("Erro ao carregar tema");
-        }
-      };
-      carregarTema();
     }, [])
   );
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subtitle: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? COLORS.dark.border : COLORS.light.border,
-  };
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -126,7 +109,7 @@ export default function Moradores() {
             {item.nome}
             {item.isAdmin ? <Text style={styles.tagAdmin}> (ADM)</Text> : null}
           </Text>
-          <Text style={[styles.detalhes, { color: theme.subtitle }]}>
+          <Text style={[styles.detalhes, { color: theme.subText }]}>
             Apto: {item.apto} | Bloco: {item.bloco}
           </Text>
         </View>
@@ -146,12 +129,12 @@ export default function Moradores() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       ) : listaMoradores.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="people-outline" size={50} color={theme.subtitle} />
-          <Text style={[styles.emptyText, { color: theme.subtitle }]}>Nenhum morador encontrado.</Text>
+          <Ionicons name="people-outline" size={50} color={theme.subText} />
+          <Text style={[styles.emptyText, { color: theme.subText }]}>Nenhum morador encontrado.</Text>
         </View>
       ) : (
         <FlatList

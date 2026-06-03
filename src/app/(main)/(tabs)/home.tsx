@@ -1,9 +1,9 @@
 import { COLORS } from "@/consts/colors";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { useAppTheme } from "@/context/ThemeContext"; // Hook do tema global
 import {
   Modal,
   Pressable,
@@ -15,7 +15,8 @@ import {
 } from "react-native";
 
 export default function Home() {
-  const [isDark, setIsDark] = useState(true);
+  const { theme, isDark } = useAppTheme(); // Puxa as cores dinâmicas e o estado do modo escuro/claro do cérebro do app
+  
   const [menuVisible, setMenuVisible] = useState(false);
   const [nomeUsuario, setNomeUsuario] = useState("Carregando...");
   const [nomeCondominio, setNomeCondominio] = useState("Carregando...");
@@ -35,9 +36,9 @@ export default function Home() {
 
       let nomeFinal = user.user_metadata?.nome || "Usuário";
       let adminFinal = user.user_metadata?.cargo ? true : false;
-      let idCondominioUsuario = null; // Vamos guardar o ID aqui para buscar o nome depois
+      let idCondominioUsuario = null;
 
-      // 2. Busca segura na tabela de Administrador usando maybeSingle()
+      // 2. Busca na tabela de Administrador
       const { data: adminData } = await supabase
         .from("tb_administrador")
         .select("*")
@@ -45,7 +46,6 @@ export default function Home() {
         .maybeSingle();
 
       if (adminData) {
-        //  BLOQUEIO DE SEGURANÇA 
         if (!adminData.id_condominio) {
           router.replace("/CriarCondominio");
           return;
@@ -53,7 +53,7 @@ export default function Home() {
 
         nomeFinal = adminData.nome || nomeFinal;
         adminFinal = true;
-        idCondominioUsuario = adminData.id_condominio; // Guarda o ID do condomínio
+        idCondominioUsuario = adminData.id_condominio;
       } else {
         // 3. Se não achou no Admin, tenta no Morador
         const { data: moradorData } = await supabase
@@ -65,35 +65,34 @@ export default function Home() {
         if (moradorData) {
           nomeFinal = moradorData.nome || nomeFinal;
           adminFinal = false;
-          idCondominioUsuario = moradorData.id_condominio; // Guarda o ID do condomínio
+          idCondominioUsuario = moradorData.id_condominio;
         }
       }
 
-     // 4. Busca o nome real do Condomínio usando o ID que encontramos
-      let nomeCondominioFinal = "Vizzo"; // Fallback caso dê erro
+      // 4. Busca o nome real do Condomínio
+      let nomeCondominioFinal = "Vizzo";
       
       if (idCondominioUsuario) {
         const { data: condominioData, error: condominioError } = await supabase
           .from("tb_condominio")
-          .select("nome_condominio") // <-- AJUSTADO AQUI
+          .select("nome_condominio")
           .eq("id_condominio", idCondominioUsuario)
           .maybeSingle();
 
-        if (condominioData && condominioData.nome_condominio) { // <-- AJUSTADO AQUI
-          nomeCondominioFinal = condominioData.nome_condominio; // <-- AJUSTADO AQUI
+        if (condominioData && condominioData.nome_condominio) {
+          nomeCondominioFinal = condominioData.nome_condominio;
         } else if (condominioError) {
           console.log("Erro ao buscar nome do condomínio:", condominioError);
         }
       }
 
-      // 5. Atualiza a tela (Garante que o "Carregando..." vai sumir!)
+      // 5. Atualiza a tela
       setNomeUsuario(nomeFinal.split(" ")[0]); // Pega só o primeiro nome
-      setNomeCondominio(nomeCondominioFinal); // Usa o nome que pegamos do banco
+      setNomeCondominio(nomeCondominioFinal);
       setIsAdmin(adminFinal);
 
     } catch (error) {
       console.log("Erro ao carregar dados:", error);
-      // Se a internet cair, não deixa a tela travada:
       setNomeUsuario("Vizinho");
       setNomeCondominio("Vizzo");
     }
@@ -102,25 +101,8 @@ export default function Home() {
   useFocusEffect(
     useCallback(() => {
       carregarPerfil();
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem("@vizzo_theme");
-          if (salvo !== null) setIsDark(salvo === "dark");
-        } catch (e) {
-          console.log("Erro ao carregar tema");
-        }
-      };
-      carregarTema();
     }, [])
   );
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subtitle: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? COLORS.dark.border : COLORS.light.border,
-  };
 
   const SERVICOS_RAPIDOS = isAdmin
     ? [
@@ -156,9 +138,9 @@ export default function Home() {
         },
         {
           name: "Lista Moradores",
-          icon: "list", // Ícone diferente para não confundir com visitantes
-          color: "#059669", // Um verde mais escuro
-          route: "/(main)/(stack)/moradores", // <-- Rota nova!
+          icon: "list",
+          color: "#059669",
+          route: "/(main)/(stack)/moradores",
         },
         {
           name: "Gestão de Áreas",
@@ -187,6 +169,12 @@ export default function Home() {
           route: "/(main)/(stack)/reservas",
         },
         {
+          name: "Encomendas",
+          icon: "cube",
+          color: COLORS.primary,
+          route: "/(main)/(stack)/encomendas",
+        },
+        {
           name: "Visitantes",
           icon: "people",
           color: COLORS.green,
@@ -198,10 +186,10 @@ export default function Home() {
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>
+          <Text style={[styles.greeting, { color: theme.primary }]}>
             Olá, {nomeUsuario} {isAdmin && "(ADM)"}
           </Text>
-          <Text style={[styles.subGreeting, { color: theme.subtitle }]}>
+          <Text style={[styles.subGreeting, { color: theme.subText }]}>
             {nomeCondominio}
           </Text>
         </View>
@@ -212,7 +200,7 @@ export default function Home() {
           <Ionicons
             name="ellipsis-vertical"
             size={24}
-            color={isDark ? "#ffffff" : COLORS.primary}
+            color={isDark ? "#ffffff" : theme.primary}
           />
         </TouchableOpacity>
       </View>
@@ -252,7 +240,7 @@ export default function Home() {
         <View
           style={[
             styles.mainCard,
-            { backgroundColor: isAdmin ? COLORS.orange : COLORS.primary },
+            { backgroundColor: isAdmin ? COLORS.orange : theme.primary },
           ]}
         >
           <View style={styles.cardInfo}>
@@ -268,7 +256,7 @@ export default function Home() {
               <Text
                 style={[
                   styles.cardButtonText,
-                  { color: isAdmin ? COLORS.orange : COLORS.primary },
+                  { color: isAdmin ? COLORS.orange : theme.primary },
                 ]}
               >
                 {isAdmin ? "Gerenciar" : "Ver Detalhes"}
@@ -328,10 +316,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  greeting: { fontSize: 24, fontWeight: "bold", color: COLORS.primary },
+  greeting: { fontSize: 24, fontWeight: "bold" },
   subGreeting: { fontSize: 14 },
   menuTrigger: { padding: 5 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.1)" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   menuPopUp: {
     position: "absolute",
     top: 60,

@@ -1,15 +1,15 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
 import { supabase } from "@/lib/supabase";
+import { useAppTheme } from "@/context/ThemeContext"; // Conectando ao cérebro global
 
 export default function Ocorrencias() {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(true);
+  const { theme } = useAppTheme(); // Puxa as cores dinâmicas de forma reativa
   const [loading, setLoading] = useState(true);
   const [ocorrencias, setOcorrencias] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -56,23 +56,8 @@ export default function Ocorrencias() {
   useFocusEffect(
     useCallback(() => {
       carregarDados();
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) { console.log("Erro no tema"); }
-      };
-      carregarTema();
     }, [])
   );
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? COLORS.dark.border : COLORS.light.border
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -106,16 +91,16 @@ export default function Ocorrencias() {
                         {item.status.toUpperCase()}
                       </Text>
                     </View>
-                    <Text style={styles.dateText}>{new Date(item.data_criacao).toLocaleDateString('pt-BR')}</Text>
+                    <Text style={[styles.dateText, { color: theme.subText }]}>{new Date(item.data_criacao).toLocaleDateString('pt-BR')}</Text>
                   </View>
 
                   <Text style={[styles.itemTitle, { color: theme.text }]}>{item.titulo}</Text>
                   <Text style={[styles.itemDesc, { color: theme.subText }]}>{item.descricao}</Text>
                   
                   {isAdmin && (
-                    <View style={styles.adminFooter}>
+                    <View style={[styles.adminFooter, { borderTopColor: theme.border }]}>
                       <Ionicons name="person-circle-outline" size={14} color={theme.subText} />
-                      <Text style={styles.moradorInfo}>
+                      <Text style={[styles.moradorInfo, { color: theme.subText }]}>
                         {item.tb_morador?.nome} — Ap: {item.tb_morador?.num_apartamento}
                       </Text>
                     </View>
@@ -154,10 +139,10 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   statusText: { fontSize: 10, fontWeight: 'bold' },
-  dateText: { fontSize: 11, color: '#888' },
+  dateText: { fontSize: 11 },
   itemTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
   itemDesc: { fontSize: 13, lineHeight: 18 },
-  adminFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 15, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: 'rgba(139, 142, 152, 0.2)' },
-  moradorInfo: { fontSize: 12, color: '#888', marginLeft: 5 },
+  adminFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 15, paddingTop: 10, borderTopWidth: 0.5 },
+  moradorInfo: { fontSize: 12, marginLeft: 5 },
   fab: { position: 'absolute', right: 25, bottom: 30, width: 65, height: 65, borderRadius: 32.5, backgroundColor: COLORS.red, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: COLORS.red, shadowOpacity: 0.3, shadowRadius: 10 }
 });

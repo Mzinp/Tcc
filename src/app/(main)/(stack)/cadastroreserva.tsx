@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Touchable
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o Calendário
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 // Seus componentes
 import ArrowBack from '@/components/ArrowVoltar';
@@ -15,8 +15,8 @@ import { Ionicons } from "@expo/vector-icons";
 export default function CadastroReserva() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
   
-  const [isDark, setIsDark] = useState(true);
   const [loading, setLoading] = useState(false);
   const [precoArea, setPrecoArea] = useState(0);
   
@@ -33,10 +33,6 @@ export default function CadastroReserva() {
   }, []);
 
   async function carregarDadosIniciais() {
-    // Carrega Tema
-    const salvo = await AsyncStorage.getItem('@vizzo_theme');
-    if (salvo !== null) setIsDark(salvo === 'dark');
-
     // Busca Preço Real da Área no Banco
     try {
         const { data, error } = await supabase
@@ -61,13 +57,6 @@ export default function CadastroReserva() {
       const ano = selectedDate.getFullYear();
       setDataFormatada(`${dia}/${mes}/${ano}`);
     }
-  };
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    border: isDark ? COLORS.dark.border : COLORS.light.border,
   };
 
   async function handleSalvarReserva() {
@@ -136,7 +125,7 @@ export default function CadastroReserva() {
         <Text style={[styles.headerTitle, { color: theme.text }]}>Nova Reserva</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.infoBox}>
           <Text style={styles.label}>ESPAÇO SELECIONADO</Text>
           <View style={styles.areaBadge}>
@@ -148,11 +137,11 @@ export default function CadastroReserva() {
           {/* CAMPO DE DATA COM CALENDÁRIO */}
           <Text style={styles.label}>DATA DA RESERVA</Text>
           <TouchableOpacity 
-            style={[styles.calendarTrigger, { backgroundColor: theme.card, borderColor: theme.border }]} 
+            style={[styles.calendarTrigger, { backgroundColor: theme.card || theme.input, borderColor: theme.border }]} 
             onPress={() => setShowCalendar(true)}
           >
             <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-            <Text style={[styles.calendarText, { color: dataFormatada ? theme.text : '#555' }]}>
+            <Text style={[styles.calendarText, { color: dataFormatada ? theme.text : theme.subText }]}>
               {dataFormatada || "Selecionar data no calendário"}
             </Text>
           </TouchableOpacity>
@@ -186,9 +175,9 @@ export default function CadastroReserva() {
         </View>
 
         {/* RESUMO DO PREÇO DINÂMICO */}
-        <View style={[styles.priceCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <View style={[styles.priceCard, { backgroundColor: theme.card || theme.input, borderColor: theme.border }]}>
             <View>
-                <Text style={styles.priceLabel}>Valor do Espaço</Text>
+                <Text style={[styles.priceLabel, { color: theme.subText }]}>Valor do Espaço</Text>
                 <Text style={[styles.priceValue, { color: COLORS.primary }]}>R$ {precoArea.toFixed(2)}</Text>
             </View>
             <Ionicons name="cash-outline" size={30} color={COLORS.primary} />
@@ -205,7 +194,7 @@ export default function CadastroReserva() {
           )}
         </View>
 
-        <Text style={styles.footerNote}>
+        <Text style={[styles.footerNote, { color: theme.subText }]}>
           *A reserva está sujeita a aprovação do síndico. O valor será incluído no próximo boleto do condomínio.
         </Text>
       </ScrollView>
@@ -244,8 +233,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 10
   },
-  priceLabel: { color: '#8b8e98', fontSize: 12, fontWeight: 'bold', marginBottom: 5 },
+  priceLabel: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 },
   priceValue: { fontSize: 22, fontWeight: 'bold' },
 
-  footerNote: { textAlign: 'center', color: '#8b8e98', fontSize: 12, marginTop: 25, lineHeight: 18, paddingHorizontal: 10 }
+  footerNote: { textAlign: 'center', fontSize: 12, marginTop: 25, lineHeight: 18, paddingHorizontal: 10 }
 });

@@ -16,7 +16,7 @@ export default function StatusBadge({ status, text }: StatusBadgeProps) {
     warning: COLORS.orange,
   };
 
-  const icons = {
+  const icons: Record<StatusBadgeProps["status"], React.ComponentProps<typeof Ionicons>["name"]> = {
     pending: "time-outline",
     success: "checkmark-circle",
     error: "close-circle",

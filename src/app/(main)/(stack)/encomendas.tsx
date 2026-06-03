@@ -1,14 +1,14 @@
-import React, { useState, useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
-import { supabase } from "@/lib/supabase"; // Importando o banco
+import { supabase } from "@/lib/supabase"; 
+import { useAppTheme } from "@/context/ThemeContext"; // Conectando ao cérebro global
 
 export default function Encomendas() {
-  const [isDark, setIsDark] = useState(true);
+  const { theme } = useAppTheme(); // Puxa as cores vivas e dinâmicas
   const [loading, setLoading] = useState(true);
   const [encomendas, setEncomendas] = useState<any[]>([]);
 
@@ -61,26 +61,8 @@ export default function Encomendas() {
   useFocusEffect(
     useCallback(() => {
       carregarEncomendas();
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem('@vizzo_theme');
-          if (salvo !== null) setIsDark(salvo === 'dark');
-        } catch (e) {
-          console.log("Erro ao carregar tema");
-        }
-      };
-      carregarTema();
     }, [])
   );
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? COLORS.dark.border : COLORS.light.border,
-    accent: COLORS.primary
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -95,11 +77,11 @@ export default function Encomendas() {
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color={theme.accent} style={{ marginTop: 20 }} />
+          <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
         ) : (
           <>
             {encomendas.some(e => e.status === 'Pendente') && (
-                <View style={styles.alertCard}>
+                <View style={[styles.alertCard, { backgroundColor: theme.primary }]}>
                     <Ionicons name="notifications" size={20} color="white" />
                     <Text style={styles.alertText}>Existem pacotes aguardando retirada.</Text>
                 </View>
@@ -120,14 +102,14 @@ export default function Encomendas() {
                     <Ionicons 
                       name={item.status === 'Retirado' ? "mail-open-outline" : "cube"} 
                       size={24} 
-                      color={item.status === 'Retirado' ? theme.subText : theme.accent} 
+                      color={item.status === 'Retirado' ? theme.subText : theme.primary} 
                     />
                   </View>
 
                   <View style={styles.info}>
                     <View style={styles.row}>
                       <Text style={[styles.objetoText, { color: theme.text }]}>{item.descricao}</Text>
-                      <Text style={[styles.codeText, { color: theme.accent }]}>{item.codigo_rastreio || 'SEM CÓDIGO'}</Text>
+                      <Text style={[styles.codeText, { color: theme.primary }]}>{item.codigo_rastreio || 'SEM CÓDIGO'}</Text>
                     </View>
 
                     <View style={styles.detailsRow}>
@@ -150,7 +132,7 @@ export default function Encomendas() {
 
                   {item.status !== 'Retirado' && (
                       <View style={styles.arrowIcon}>
-                          <Ionicons name="chevron-forward" size={20} color={theme.accent} />
+                          <Ionicons name="chevron-forward" size={20} color={theme.primary} />
                       </View>
                   )}
                 </TouchableOpacity>
@@ -159,16 +141,15 @@ export default function Encomendas() {
           </>
         )}
 
-        <TouchableOpacity style={[styles.qrButton, { borderColor: theme.accent }]}>
-            <Ionicons name="qr-code-outline" size={20} color={theme.accent} />
-            <Text style={[styles.qrButtonText, { color: theme.accent }]}>MOSTRAR QR CODE DE RETIRADA</Text>
+        <TouchableOpacity style={[styles.qrButton, { borderColor: theme.primary }]}>
+            <Ionicons name="qr-code-outline" size={20} color={theme.primary} />
+            <Text style={[styles.qrButtonText, { color: theme.primary }]}>MOSTRAR QR CODE DE RETIRADA</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
   );
 }
 
-// OS ESTILOS PERMANECEM EXATAMENTE OS MESMOS
 const styles = StyleSheet.create({
   container: { flex: 1 },
   topHeader: { paddingTop: 60, paddingHorizontal: 15 },
@@ -176,7 +157,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 30, fontWeight: 'bold' },
   subtitle: { fontSize: 14, marginTop: 5 },
   content: { paddingBottom: 50 },
-  alertCard: { marginHorizontal: 25, backgroundColor: COLORS.primary, padding: 15, borderRadius: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
+  alertCard: { marginHorizontal: 25, padding: 15, borderRadius: 15, flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
   alertText: { color: 'white', fontWeight: 'bold', fontSize: 13, marginLeft: 10 },
   sectionTitle: { fontSize: 10, fontWeight: '900', marginBottom: 15, letterSpacing: 2, paddingHorizontal: 25 },
   card: { marginHorizontal: 20, padding: 15, borderRadius: 22, flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderWidth: 1, elevation: 2, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 10 },

@@ -3,30 +3,16 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, StatusBar, Activity
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
-
-const THEME_COLORS = {
-  primary: "#2d79f3",
-  darkBg: "#0f1111",
-  darkCard: "#1a1d1d",
-  darkBorder: "#252828"
-};
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 export default function Marketplace() {
   const router = useRouter();
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
   const [abaAtiva, setAbaAtiva] = useState('comprar');
   
   const [servicos, setServicos] = useState<any[]>([]);
   const [meuId, setMeuId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const theme = {
-    bg: THEME_COLORS.darkBg,
-    card: THEME_COLORS.darkCard,
-    text: "#ffffff",
-    subtitle: "#8b8e98",
-    border: THEME_COLORS.darkBorder,
-    accent: THEME_COLORS.primary
-  };
 
   async function carregarServicos() {
     try {
@@ -36,7 +22,7 @@ export default function Marketplace() {
       if (!user) return;
       setMeuId(user.id);
 
-      // BUSCA ATUALIZADA: Agora pegamos descrição e telefone para o WhatsApp funcionar
+      // BUSCA ATUALIZADA: Mantendo a mesma estrutura que traz descrição e telefone para o WhatsApp
       const { data, error } = await supabase
         .from("tb_servico")
         .select(`
@@ -62,8 +48,8 @@ export default function Marketplace() {
           preco: `R$ ${s.valor_estimado || '0,00'}`,
           icon: "construct-outline",
           id_morador: s.id_morador,
-          descricao: s.descricao_servico, // Passando a descrição para a próxima tela
-          telefone: s.tb_morador?.telefone // Passando o telefone para o WhatsApp
+          descricao: s.descricao_servico,
+          telefone: s.tb_morador?.telefone
         }));
         
         setServicos(formatados);
@@ -99,20 +85,20 @@ export default function Marketplace() {
             style={[styles.tab, abaAtiva === 'comprar' && { backgroundColor: theme.border }]} 
             onPress={() => setAbaAtiva('comprar')}
           >
-            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? theme.accent : theme.subtitle }]}>CONTRATAR</Text>
+            <Text style={[styles.tabText, { color: abaAtiva === 'comprar' ? theme.primary : theme.subText }]}>CONTRATAR</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.tab, abaAtiva === 'vender' && { backgroundColor: theme.border }]} 
             onPress={() => setAbaAtiva('vender')}
           >
-            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? theme.accent : theme.subtitle }]}>MEUS ANÚNCIOS</Text>
+            <Text style={[styles.tabText, { color: abaAtiva === 'vender' ? theme.primary : theme.subText }]}>MEUS ANÚNCIOS</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {loading ? (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={theme.accent} />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       ) : dadosAtuais.length > 0 ? (
         <FlatList
@@ -122,7 +108,6 @@ export default function Marketplace() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity 
-              // FUNÇÃO DE CLIQUE NO CARD ADICIONADA AQUI
               onPress={() => router.push({
                 pathname: "/(main)/(stack)/detalhe-servico",
                 params: {
@@ -139,16 +124,16 @@ export default function Marketplace() {
               style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
             >
               <View style={[styles.iconBox, { backgroundColor: theme.bg }]}>
-                <Ionicons name={item.icon as any} size={24} color={theme.accent} />
+                <Ionicons name={item.icon as any} size={24} color={theme.primary} />
               </View>
               
               <View style={styles.info}>
                 <Text style={[styles.serviceName, { color: theme.text }]}>{item.nome}</Text>
-                <Text style={[styles.provider, { color: theme.subtitle }]}>{item.prestador}</Text>
-                <Text style={[styles.price, { color: theme.accent }]}>{item.preco}</Text>
+                <Text style={[styles.provider, { color: theme.subText }]}>{item.prestador}</Text>
+                <Text style={[styles.price, { color: theme.primary }]}>{item.preco}</Text>
               </View>
               
-              <View style={[styles.hireBtn, { backgroundColor: theme.accent }]}>
+              <View style={[styles.hireBtn, { backgroundColor: theme.primary }]}>
                 <Text style={styles.hireBtnText}>{abaAtiva === 'comprar' ? 'Pedir' : 'Ver'}</Text>
               </View>
             </TouchableOpacity>
@@ -157,22 +142,22 @@ export default function Marketplace() {
       ) : (
         <View style={styles.emptyContainer}>
           <View style={[styles.emptyIconCircle, { backgroundColor: theme.card }]}>
-            <Ionicons name="briefcase-outline" size={50} color={theme.accent} />
+            <Ionicons name="briefcase-outline" size={50} color={theme.primary} />
           </View>
           <Text style={[styles.emptyTitle, { color: theme.text }]}>Sua vitrine está vazia</Text>
-          <Text style={[styles.emptySub, { color: theme.subtitle }]}>Ajude a economia do Vizzo compartilhando seus talentos!</Text>
+          <Text style={[styles.emptySub, { color: theme.subText }]}>Ajude a economia do Vizzo compartilhando seus talentos!</Text>
           
           <TouchableOpacity 
             style={[styles.btnAnunciar, { borderColor: theme.border }]}
             onPress={() => router.push("/(main)/(stack)/novo-servico")}
           >
-            <Text style={[styles.btnAnunciarText, { color: theme.accent }]}>ANUNCIAR MEU TRABALHO</Text>
+            <Text style={[styles.btnAnunciarText, { color: theme.primary }]}>ANUNCIAR MEU TRABALHO</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TouchableOpacity 
-        style={[styles.fab, { backgroundColor: theme.accent }]}
+        style={[styles.fab, { backgroundColor: theme.primary }]}
         activeOpacity={0.9}
         onPress={() => router.push("/(main)/(stack)/novo-servico")}
       >
@@ -195,7 +180,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     alignItems: 'center', 
     marginBottom: 16,
-    borderWidth: 1
+    borderWidth: 1,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.02,
+    shadowRadius: 8
   },
   iconBox: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
   info: { flex: 1, marginLeft: 15 },
@@ -214,9 +203,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center', 
     alignItems: 'center',
     elevation: 8,
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 }
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 }
   },
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyIconCircle: { width: 100, height: 100, borderRadius: 30, justifyContent: 'center', alignItems: 'center', marginBottom: 25 },

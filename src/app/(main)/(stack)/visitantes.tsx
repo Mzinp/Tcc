@@ -14,8 +14,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from 'expo-router';
 import { supabase } from "@/lib/supabase"; 
 import ArrowBack from '@/components/ArrowVoltar';
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 export default function Visitantes() {
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState<any[]>([]);
   
@@ -24,24 +26,13 @@ export default function Visitantes() {
   const [cpf, setCpf] = useState(""); 
   const [dataVisita, setDataVisita] = useState("");
 
-  // Tema Full Black Fixo para o TCC
-  const theme = {
-    bg: "#0f1111",
-    card: "#1a1d1d",
-    text: "#ffffff",
-    subText: "#8b8e98",
-    input: "#252828",
-    border: "#252828",
-    accent: "#2d79f3"
-  };
-
   useFocusEffect(
     React.useCallback(() => {
       buscarHistorico();
     }, [])
   );
 
-  // Validação Matemática de CPF
+  // Validação Matemática de CPF (Mantida intacta)
   const validarCPF = (valor: string) => {
     valor = valor.replace(/[^\d]+/g, '');
     if (valor.length !== 11 || !!valor.match(/(\d)\1{10}/)) return false;
@@ -116,7 +107,6 @@ export default function Visitantes() {
 
       if (error) throw error;
 
-      // Limpa os campos e atualiza a lista antes de ir para a tela de sucesso
       setNome("");
       setCpf("");
       setDataVisita("");
@@ -153,12 +143,12 @@ export default function Visitantes() {
 
         <View style={[styles.formCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={styles.sectionTitleRow}>
-            <Ionicons name="person-add-outline" size={20} color={theme.accent} />
+            <Ionicons name="person-add-outline" size={20} color={theme.primary} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Nova Autorização</Text>
           </View>
 
-          <Text style={[styles.label, { color: theme.accent }]}>NOME DO VISITANTE</Text>
-          <View style={[styles.inputWrapper, { backgroundColor: theme.input, borderColor: theme.border }]}>
+          <Text style={[styles.label, { color: theme.primary }]}>NOME DO VISITANTE</Text>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.input || theme.border, borderColor: theme.border }]}>
             <TextInput 
               style={[styles.input, { color: theme.text }]} 
               placeholder="Ex: João Silva" 
@@ -170,8 +160,8 @@ export default function Visitantes() {
 
           <View style={styles.row}>
             <View style={{ flex: 1.5, marginRight: 10 }}>
-              <Text style={[styles.label, { color: theme.accent }]}>CPF</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: theme.input, borderColor: theme.border }]}>
+              <Text style={[styles.label, { color: theme.primary }]}>CPF</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.input || theme.border, borderColor: theme.border }]}>
                 <TextInput 
                   style={[styles.input, { color: theme.text }]} 
                   placeholder="000.000.000-00" 
@@ -184,8 +174,8 @@ export default function Visitantes() {
               </View>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.label, { color: theme.accent }]}>DATA</Text>
-              <View style={[styles.inputWrapper, { backgroundColor: theme.input, borderColor: theme.border }]}>
+              <Text style={[styles.label, { color: theme.primary }]}>DATA</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.input || theme.border, borderColor: theme.border }]}>
                 <TextInput 
                   style={[styles.input, { color: theme.text }]} 
                   placeholder="Hoje" 
@@ -198,7 +188,7 @@ export default function Visitantes() {
           </View>
 
           <TouchableOpacity 
-            style={[styles.mainButton, { backgroundColor: theme.accent }, loading && { opacity: 0.7 }]}
+            style={[styles.mainButton, { backgroundColor: theme.primary }, loading && { opacity: 0.7 }]}
             onPress={handleLiberarAcesso}
             disabled={loading}
           >
@@ -216,8 +206,8 @@ export default function Visitantes() {
           
           {historico.map((item) => (
             <View key={item.id_visitante} style={[styles.historyCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <View style={[styles.historyAvatar, { backgroundColor: "#1e2b3c" }]}>
-                <Ionicons name="person" size={20} color={theme.accent} />
+              <View style={[styles.historyAvatar, { backgroundColor: "rgba(45, 121, 243, 0.1)" }]}>
+                <Ionicons name="person" size={20} color={theme.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: 15 }}>
                 <Text style={[styles.historyName, { color: theme.text }]}>{item.nome_visitante}</Text>
@@ -225,7 +215,7 @@ export default function Visitantes() {
                   {item.cpf_visitante} • {item.data_prevista}
                 </Text>
               </View>
-              <Ionicons name="checkmark-circle" size={22} color="#2ecc71" />
+              <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
             </View>
           ))}
         </View>
@@ -241,7 +231,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 25, marginBottom: 25 },
   title: { fontSize: 32, fontWeight: 'bold' },
   subtitle: { fontSize: 14, marginTop: 4 },
-  formCard: { marginHorizontal: 20, padding: 22, borderRadius: 28, borderWidth: 1, elevation: 5 },
+  formCard: { marginHorizontal: 20, padding: 22, borderRadius: 28, borderWidth: 1, elevation: 5, shadowColor: "#000", shadowOpacity: 0.03, shadowRadius: 10 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 25 },
   sectionTitle: { fontSize: 17, fontWeight: 'bold', marginLeft: 10 },
   label: { fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1.2 },

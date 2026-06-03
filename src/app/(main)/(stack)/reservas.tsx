@@ -5,19 +5,18 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { COLORS } from "@/consts/colors";
 import ArrowBack from "@/components/ArrowVoltar";
 import { supabase } from "@/lib/supabase";
+import { useAppTheme } from "@/context/ThemeContext"; // Conectando ao tema global
 
 export default function Reservas() {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(true);
+  const { theme, isDark } = useAppTheme(); // Puxa as cores e o estado atual do tema
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState<"admin" | "user">("user");
   const [areas, setAreas] = useState<any[]>([]);
@@ -84,26 +83,8 @@ export default function Reservas() {
   useFocusEffect(
     useCallback(() => {
       carregarDados();
-      const carregarTema = async () => {
-        try {
-          const salvo = await AsyncStorage.getItem("@vizzo_theme");
-          if (salvo !== null) setIsDark(salvo === "dark");
-        } catch (e) {
-          console.log("Erro no tema");
-        }
-      };
-      carregarTema();
     }, []),
   );
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subtitle: isDark ? COLORS.primary : "#1e5bb8",
-    subText: isDark ? "#a0a0a0" : "#666666",
-    border: isDark ? COLORS.dark.border : COLORS.light.border,
-  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -121,7 +102,7 @@ export default function Reservas() {
               styles.roleBadge,
               {
                 backgroundColor:
-                  userType === "admin" ? COLORS.primary : COLORS.green,
+                  userType === "admin" ? theme.primary : COLORS.green,
               },
             ]}
           >
@@ -129,7 +110,7 @@ export default function Reservas() {
               {userType === "admin" ? "SÍNDICO" : "MORADOR"}
             </Text>
           </View>
-          <Text style={[styles.subtitle, { color: theme.subtitle }]}>
+          <Text style={[styles.subtitle, { color: isDark ? theme.primary : "#1e5bb8" }]}>
             {userType === "admin"
               ? "Gestão de Espaços"
               : "Disponibilidade em tempo real"}
@@ -140,7 +121,7 @@ export default function Reservas() {
       {loading ? (
         <ActivityIndicator
           size="large"
-          color={COLORS.primary}
+          color={theme.primary}
           style={{ marginTop: 50 }}
         />
       ) : (
@@ -170,9 +151,9 @@ export default function Reservas() {
             >
               <View style={styles.iconArea}>
                 <Ionicons
-                  name={(area.icone || "business") as any} // Coloquei 'business' como fallback caso não tenha ícone
+                  name={(area.icone || "business") as any}
                   size={24}
-                  color={COLORS.primary}
+                  color={theme.primary}
                 />
               </View>
 
@@ -208,14 +189,14 @@ export default function Reservas() {
                   }
                 >
                   <Text
-                    style={[styles.adminBtnText, { color: COLORS.primary }]}
+                    style={[styles.adminBtnText, { color: theme.primary }]}
                   >
                     AJUSTAR
                   </Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  style={styles.reservaBtn}
+                  style={[styles.reservaBtn, { backgroundColor: theme.primary }]}
                   onPress={() =>
                     router.push({
                       pathname: "/(main)/(stack)/cadastroreserva",
@@ -234,25 +215,23 @@ export default function Reservas() {
       {/* Botão para Admin Adicionar Nova Área */}
       {userType === "admin" && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: theme.primary }]}
           onPress={() => router.push("/(main)/(stack)/gestaoarea")}
         >
           <Ionicons name="add" size={30} color="white" />
         </TouchableOpacity>
       )}
 
-      {/* Como o banco agora define quem é quem, o botão de teste de Mudar Papel
-          só vai alterar a UI, mas você já pode deixá-lo aí se quiser apresentar o TCC mais fácil,
-          ou pode apagar depois! */}
+      {/* Mudar Papel do modo teste adaptado ao tema */}
       <View style={styles.testSwitcher}>
         <TouchableOpacity
           style={[
             styles.floatingTest,
-            { backgroundColor: isDark ? COLORS.dark.card : COLORS.light.input },
+            { backgroundColor: theme.card, borderColor: theme.primary },
           ]}
           onPress={() => setUserType(userType === "admin" ? "user" : "admin")}
         >
-          <Ionicons name="swap-horizontal" size={16} color={COLORS.primary} />
+          <Ionicons name="swap-horizontal" size={16} color={theme.primary} />
           <Text
             style={{
               fontSize: 10,
@@ -315,7 +294,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   reservaBtn: {
-    backgroundColor: COLORS.primary,
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 12,
@@ -328,7 +306,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
     elevation: 5,
@@ -344,7 +321,9 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: COLORS.primary,
     elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
   },
 });

@@ -74,14 +74,26 @@ export default function Login() {
 
       const userId = authData.user.id;
 
+      // MODIFICADO: Agora buscamos também a coluna "nome" de cada tabela
       const [resAdmin, resMorador] = await Promise.all([
-        supabase.from("tb_administrador").select("id_administrador").eq("id_administrador", userId).maybeSingle(),
-        supabase.from("tb_morador").select("id_morador").eq("id_morador", userId).maybeSingle()
+        supabase.from("tb_administrador").select("nome").eq("id_administrador", userId).maybeSingle(),
+        supabase.from("tb_morador").select("nome").eq("id_morador", userId).maybeSingle()
       ]);
 
       if (resAdmin.data || resMorador.data) {
-        const tipo = resAdmin.data ? "Administrador" : "Morador";
-        mostrarAviso(`Seja bem-vindo, ${tipo}!`, "success");
+        let nomeUsuario = "";
+
+        if (resAdmin.data && resAdmin.data.nome) {
+          nomeUsuario = resAdmin.data.nome.split(" ")[0];
+        } else if (resMorador.data && resMorador.data.nome) {
+          nomeUsuario = resMorador.data.nome.split(" ")[0];
+        } else {
+          // Fallback caso o campo nome esteja vazio no banco
+          nomeUsuario = resAdmin.data ? "Administrador" : "Morador";
+        }
+
+        // Mostra a mensagem personalizada com o nome real vindo do banco
+        mostrarAviso(`Seja bem-vindo, ${nomeUsuario}!`, "success");
       } else {
         mostrarAviso("Perfil não encontrado no sistema", "error");
         setLoading(false);

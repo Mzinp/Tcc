@@ -16,8 +16,10 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from "@/lib/supabase"; 
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 export default function TestChatGeral() {
+  const { theme } = useAppTheme(); // Injetando o tema reativo global
   const [mensagem, setMensagem] = useState("");
   const [mensagens, setMensagens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,18 +30,6 @@ export default function TestChatGeral() {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const LIMITE_CARACTERES = 500;
-
-  const theme = {
-    bg: "#0f1111",
-    header: "#1a1d1d",
-    text: "#ffffff",
-    subText: "#8b8e98",
-    bubbleEu: "#2d79f3",
-    bubbleOutro: "#252828",
-    inputBg: "#252828",
-    border: "#252828",
-    accent: "#2d79f3"
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -143,24 +133,25 @@ export default function TestChatGeral() {
     >
       <StatusBar barStyle="light-content" />
       
-      <View style={[styles.header, { backgroundColor: theme.header, borderBottomColor: theme.border }]}>
+      <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
         <ArrowBack cor={theme.text} />
         <View style={styles.headerInfo}>
           <Text style={[styles.chatTitle, { color: theme.text }]}>Chat Geral Vizzo</Text>
           <Text style={[styles.chatStatus, { color: COLORS.green }]}>● Realtime Ativo</Text>
         </View>
-        <Ionicons name="shield-checkmark-outline" size={22} color={theme.accent} />
+        <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.primary} />
       </View>
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={COLORS.primary}/>
+          <ActivityIndicator size="large" color={theme.primary || COLORS.primary}/>
         </View>
       ) : (
         <ScrollView 
           ref={scrollViewRef}
           contentContainerStyle={styles.chatArea}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          showsVerticalScrollIndicator={false}
         >
           {mensagens.map((msg, index) => {
             const ehEu = msg.id_autor === userId;
@@ -171,7 +162,7 @@ export default function TestChatGeral() {
             return (
               <View key={uniqueKey} style={[styles.msgContainer, ehEu ? styles.msgEu : styles.msgOutro]}>
                 {!ehEu && <Text style={[styles.userLabel, { color: "#ff8c00" }]}>{msg.nome_autor}</Text>}
-                <View style={[styles.bubble, { backgroundColor: ehEu ? theme.bubbleEu : theme.bubbleOutro }]}>
+                <View style={[styles.bubble, { backgroundColor: ehEu ? (theme.primary || "#2d79f3") : theme.card }]}>
                   <Text style={[styles.msgText, { color: "#fff" }]}>{msg.texto}</Text>
                   <Text style={[styles.horaText, { color: "rgba(255,255,255,0.5)" }]}>
                     {msg.created_at 
@@ -185,7 +176,7 @@ export default function TestChatGeral() {
         </ScrollView>
       )}
 
-      <View style={[styles.inputBar, { backgroundColor: theme.header, borderTopColor: theme.border }]}>
+      <View style={[styles.inputBar, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
         <View style={{ flex: 1 }}>
           <TextInput 
             placeholder="Escreva para o condomínio..."
@@ -193,14 +184,14 @@ export default function TestChatGeral() {
             value={mensagem}
             onChangeText={setMensagem}
             maxLength={LIMITE_CARACTERES}
-            style={[styles.input, { backgroundColor: theme.inputBg, color: theme.text }]}
+            style={[styles.input, { backgroundColor: theme.bg, color: theme.text }]}
             multiline
           />
         </View>
 
         <TouchableOpacity 
           onPress={enviarMensagem}
-          style={[styles.sendBtn, { backgroundColor: (mensagem.trim()) ? theme.bubbleEu : theme.subText }]}
+          style={[styles.sendBtn, { backgroundColor: (mensagem.trim()) ? (theme.primary || "#2d79f3") : theme.subText }]}
           disabled={!mensagem.trim()}
         >
           <Ionicons name="send" size={18} color="white" />

@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, router } from 'expo-router'; // 'router' já está importado aqui
+import { useFocusEffect, router } from 'expo-router'; 
 import { supabase } from "@/lib/supabase"; 
 import { COLORS } from "@/consts/colors";
+import * as ImagePicker from 'expo-image-picker'; 
+import { useAppTheme } from "@/context/ThemeContext"; // Importação limpa usando @/
 
 const { width } = Dimensions.get('window');
 
 export default function Perfil() {
-  const [isDark, setIsDark] = useState(true);
+  const { theme, isDark, toggleTheme } = useAppTheme(); // Puxando o tema global do cérebro do app
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false); 
   
-  // States para os dados do banco
   const [nome, setNome] = useState("Usuário");
   const [infoExtra, setInfoExtra] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null); 
   const [dadosCompletos, setDadosCompletos] = useState<any>(null);
 
   useFocusEffect(
     React.useCallback(() => {
-      setIsDark(true); 
       buscarDadosUsuario();
     }, [])
   );
@@ -44,6 +46,7 @@ export default function Perfil() {
       if (admin) {
         setNome(admin.nome);
         setInfoExtra("Administrador do Sistema");
+        setFotoUrl(admin.foto_url || null);
         setDadosCompletos({ ...admin, email: user.email, tipo: 'ADM' });
       } else {
         const { data: morador } = await supabase
@@ -54,7 +57,8 @@ export default function Perfil() {
 
         if (morador) {
           setNome(morador.Nome || morador.nome);
-          setInfoExtra(`Bloco ${morador.Bloco} - Apto ${morador.Apartamento}`);
+          setInfoExtra(`Bloco ${morador.Bloco || ''} - Apto ${morador.Apartamento || morador.num_apartamento || ''}`);
+          setFotoUrl(morador.foto_url || null);
           setDadosCompletos({ ...morador, tipo: 'MORADOR' });
         }
       }
@@ -65,11 +69,80 @@ export default function Perfil() {
     }
   }
 
-  // MUDANÇA AQUI: Agora navega em vez de mostrar Alert
+  async function alterarFotoPerfil() {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permissão necessária", "Precisamos de acesso às suas fotos para alterar a imagem de perfil.");
+        return;
+      }
+
+      const resultado = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true, 
+        aspect: [1, 1],
+        quality: 0.7, 
+      });
+
+      if (resultado.canceled || !resultado.assets || resultado.assets.length === 0) {
+        return; 
+      }
+
+      const imagemSelecionada = resultado.assets[0];
+      setUploading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const formData = new FormData();
+      const nomeArquivo = `${user.id}-${Date.now()}.jpg`; 
+
+      formData.append('file', {
+        uri: imagemSelecionada.uri,
+        name: nomeArquivo,
+        type: 'image/jpeg',
+      } as any);
+
+      const { error: storageError } = await supabase.storage
+        .from('avatars')
+        .upload(nomeArquivo, formData, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (storageError) throw storageError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(nomeArquivo);
+
+      if (dadosCompletos?.tipo === 'ADM') {
+        await supabase
+          .from("tb_administrador")
+          .update({ foto_url: publicUrl })
+          .eq("id_administrador", user.id);
+      } else {
+        await supabase
+          .from("tb_morador")
+          .update({ foto_url: publicUrl })
+          .eq("id_morador", user.id);
+      }
+
+      setFotoUrl(publicUrl);
+      Alert.alert("Sucesso", "Sua foto de perfil foi atualizada com sucesso!");
+
+    } catch (error: any) {
+      console.log("Erro no upload:", error);
+      Alert.alert("Erro no Servidor", "Não foi possível enviar a imagem. Tente novamente.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const verMeusDados = () => {
     router.push({
       pathname: "/(main)/(stack)/meus-dados",
-      params: { cache: 'true' } // Opcional: sinaliza que já temos dados
+      params: { cache: 'true' }
     });
   };
 
@@ -78,27 +151,37 @@ export default function Perfil() {
     router.replace("/login"); 
   };
 
-  const theme = {
-    bg: "#0f1111",
-    text: "#ffffff",
-    subText: "#b0b0b0",
-    border: "#1a1d1d",
-    card: "#1a1d1d",
-  };
+  const uriFotoFinal = fotoUrl 
+    ? fotoUrl 
+    : `https://ui-avatars.com/api/?name=${nome}&background=2d79f3&color=fff`;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <View style={[styles.avatarBorder, { borderColor: "#2d79f3" }]}>
-            <Image 
-              source={{ uri: `https://ui-avatars.com/api/?name=${nome}&background=2d79f3&color=fff` }} 
-              style={styles.avatar} 
-            />
-          </View>
+          
+          <TouchableOpacity 
+            style={[styles.avatarBorder, { borderColor: theme.primary }]} 
+            onPress={alterarFotoPerfil}
+            activeOpacity={0.8}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <View style={[styles.avatar, styles.loadingAvatarContainer]}>
+                <ActivityIndicator color="white" size="large" />
+              </View>
+            ) : (
+              <View>
+                <Image source={{ uri: uriFotoFinal }} style={styles.avatar} />
+                <View style={[styles.editIconBadge, { backgroundColor: theme.primary, borderColor: theme.bg }]}>
+                  <Ionicons name="camera" size={16} color="white" />
+                </View>
+              </View>
+            )}
+          </TouchableOpacity>
 
           {loading ? (
-            <ActivityIndicator color="#2d79f3" style={{ marginTop: 20 }} />
+            <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
           ) : (
             <>
               <Text style={[styles.userName, { color: theme.text }]}>{nome}</Text>
@@ -107,7 +190,7 @@ export default function Perfil() {
           )}
 
           <TouchableOpacity 
-            style={[styles.qrShortcut, { backgroundColor: "#2d79f3" }]}
+            style={[styles.qrShortcut, { backgroundColor: theme.primary }]}
             onPress={() => setModalVisible(true)}
           >
             <Ionicons name="qr-code" size={20} color="white" />
@@ -118,6 +201,7 @@ export default function Perfil() {
         <View style={styles.menu}>
           {[
             { icon: 'person-outline', label: 'Meus Dados', action: verMeusDados },
+            { icon: 'color-filter-outline', label: isDark ? 'Modo Claro (Acessibilidade)' : 'Modo Escuro (Padrão)', action: toggleTheme },
             { icon: 'notifications-outline', label: 'Notificações', action: () => {} },
             { icon: 'shield-checkmark-outline', label: 'Privacidade', action: () => {} },
             { icon: 'help-circle-outline', label: 'Ajuda e Suporte', action: () => {} },
@@ -128,10 +212,10 @@ export default function Perfil() {
               onPress={item.action}
             >
               <View style={styles.menuLeft}>
-                <Ionicons name={item.icon as any} size={22} color="#2d79f3" />
+                <Ionicons name={item.icon as any} size={22} color={theme.primary} />
                 <Text style={[styles.menuLabel, { color: theme.text }]}>{item.label}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#353838" />
+              <Ionicons name="chevron-forward" size={20} color={theme.border} />
             </TouchableOpacity>
           ))}
 
@@ -143,12 +227,12 @@ export default function Perfil() {
 
       <Modal animationType="fade" transparent visible={modalVisible}>
         <TouchableOpacity style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          <View style={[styles.modalContent, { backgroundColor: "#1a1d1d" }]}>
-            <Text style={[styles.modalTitle, { color: 'white' }]}>Acesso Vizzo</Text>
-            <Ionicons name="qr-code" size={200} color="white" />
-            <Text style={[styles.modalInfo, { color: '#ccc' }]}>Apresente este código no leitor</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Acesso Vizzo</Text>
+            <Ionicons name="qr-code" size={200} color={theme.text} />
+            <Text style={[styles.modalInfo, { color: theme.subText }]}>Apresente este código no leitor</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeBtnText}>FECHAR</Text>
+                <Text style={[styles.closeBtnText, { color: theme.primary }]}>FECHAR</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -161,8 +245,20 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 150 },
   header: { alignItems: 'center', paddingTop: 80, paddingBottom: 30 },
-  avatarBorder: { padding: 4, borderRadius: 60, borderWidth: 2 },
+  avatarBorder: { padding: 4, borderRadius: 60, borderWidth: 2, position: 'relative' },
   avatar: { width: 100, height: 100, borderRadius: 50 },
+  loadingAvatarContainer: { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  editIconBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
   userName: { fontSize: 22, fontWeight: 'bold', marginTop: 15 },
   userInfo: { fontSize: 14, marginBottom: 20 },
   qrShortcut: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 25, borderRadius: 30 },
@@ -178,5 +274,5 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
   modalInfo: { fontSize: 12, marginTop: 20 },
   closeBtn: { marginTop: 30 },
-  closeBtnText: { color: "#2d79f3", fontWeight: 'bold' }
+  closeBtnText: { fontWeight: 'bold' }
 });

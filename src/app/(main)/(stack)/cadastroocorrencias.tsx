@@ -1,35 +1,51 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from "@/consts/colors";
 import ArrowBack from '@/components/ArrowVoltar';
-import { supabase } from "@/lib/supabase"; // Importando o banco
+import { supabase } from "@/lib/supabase"; 
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 export default function CadastroOcorrencia() {
-  const [isDark, setIsDark] = useState(true);
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
   const [loading, setLoading] = useState(false);
   
   // Estados para os campos do banco
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
 
-  useEffect(() => {
-    const carregarTema = async () => {
-      const salvo = await AsyncStorage.getItem('@vizzo_theme');
-      if (salvo !== null) setIsDark(salvo === 'dark');
-    };
-    carregarTema();
-  }, []);
+  // FUNÇÃO DE ALERTA LEGAL ADAPTADA PARA CELULAR E PC (WEB)
+  const handleVerificarTermosMidia = () => {
+    const mensagemAlert = "De acordo com o Art. 20 do Código Civil e as normas da LGPD, é expressamente proibido registrar, expor ou compartilhar imagens e vídeos de outros moradores, funcionários ou terceiros sem autorização prévia por escrito.\n\nAo continuar, você assume total responsabilidade civil e criminal pelo conteúdo anexado, garantindo que ele possui fins exclusivamente de registro administrativo e segurança interna.";
 
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    input: isDark ? COLORS.dark.input : COLORS.light.input,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    subText: isDark ? COLORS.dark.subText : COLORS.light.subText,
-    border: isDark ? COLORS.dark.border : COLORS.light.border
+    // Se você estiver testando no PC (Navegador/Web)
+    if (Platform.OS === 'web') {
+      const aceitou = window.confirm(`⚖️ Restrição Legal de Imagem\n\n${mensagemAlert}\n\nDeseja aceitar e continuar?`);
+      if (aceitou) {
+        alert("Funcionalidade de anexo será implementada em breve!");
+      }
+      return;
+    }
+
+    // Se estiver rodando no Celular (Android/iOS)
+    Alert.alert(
+      "⚖️ Restrição Legal de Imagem",
+      mensagemAlert,
+      [
+        {
+          text: "Voltar",
+          style: "cancel"
+        },
+        {
+          text: "Aceitar e Continuar",
+          onPress: () => {
+            Alert.alert("Aviso", "Funcionalidade de anexo será implementada em breve!");
+          }
+        }
+      ],
+      { cancelable: false }
+    );
   };
 
   // FUNÇÃO PARA SALVAR NO SUPABASE
@@ -86,7 +102,7 @@ export default function CadastroOcorrencia() {
       behavior={Platform.OS === "ios" ? "padding" : "height"} 
       style={[styles.container, { backgroundColor: theme.bg }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <ArrowBack cor={theme.text} />
           <Text style={[styles.title, { color: theme.text }]}>Registrar Ocorrência</Text>
@@ -95,7 +111,7 @@ export default function CadastroOcorrencia() {
 
         <View style={styles.form}>
           <Text style={styles.label}>ASSUNTO</Text>
-          <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border }]}>
+          <View style={[styles.inputContainer, { backgroundColor: theme.input || theme.border, borderColor: theme.border }]}>
             <TextInput 
               style={[styles.input, { color: theme.text }]} 
               placeholder="Ex: Vazamento no corredor, Barulho excessivo..." 
@@ -106,7 +122,7 @@ export default function CadastroOcorrencia() {
           </View>
 
           <Text style={styles.label}>DESCRIÇÃO DETALHADA</Text>
-          <View style={[styles.inputContainer, { backgroundColor: theme.input, borderColor: theme.border, height: 150 }]}>
+          <View style={[styles.inputContainer, { backgroundColor: theme.input || theme.border, borderColor: theme.border, height: 150 }]}>
             <TextInput 
               style={[styles.input, { color: theme.text, textAlignVertical: 'top', paddingTop: 15 }]} 
               multiline 
@@ -120,7 +136,7 @@ export default function CadastroOcorrencia() {
 
           <TouchableOpacity 
             style={[styles.attachButton, { borderColor: theme.border, borderStyle: 'dashed' }]}
-            onPress={() => Alert.alert("Aviso", "Funcionalidade de anexo será implementada em breve!")}
+            onPress={handleVerificarTermosMidia}
           >
             <Ionicons name="camera-outline" size={24} color={COLORS.red} />
             <Text style={[styles.attachText, { color: theme.text }]}>Anexar Foto ou Vídeo</Text>
@@ -141,7 +157,7 @@ export default function CadastroOcorrencia() {
             )}
           </TouchableOpacity>
           
-          <Text style={styles.warningText}>
+          <Text style={[styles.warningText, { color: theme.subText }]}>
             Sua ocorrência será registrada com seu nome e unidade para que o síndico possa entrar em contato.
           </Text>
         </View>
@@ -163,7 +179,7 @@ const styles = StyleSheet.create({
     borderRadius: 15, 
     marginBottom: 20,
     paddingHorizontal: 15,
-    minHeight: 55 // Garante altura mínima para o input de assunto
+    minHeight: 55 
   },
   input: { flex: 1, fontSize: 15 },
   attachButton: { 
@@ -186,5 +202,5 @@ const styles = StyleSheet.create({
     elevation: 4
   },
   buttonText: { color: 'white', fontWeight: 'bold', marginLeft: 10, letterSpacing: 1 },
-  warningText: { textAlign: 'center', color: '#8b8e98', fontSize: 12, marginTop: 20, lineHeight: 18 }
+  warningText: { textAlign: 'center', fontSize: 12, marginTop: 20, lineHeight: 18 }
 });

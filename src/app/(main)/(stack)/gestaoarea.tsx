@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 import ArrowBack from '@/components/ArrowVoltar';
 import InputField from "@/components/InputField";
@@ -12,25 +12,11 @@ import PrimaryButton from "@/components/PrimaryButton";
 export default function GestaoArea() {
   const router = useRouter();
   const { idArea, nomeArea, valorAtual } = useLocalSearchParams();
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
   
-  const [isDark, setIsDark] = useState(true);
   const [loading, setLoading] = useState(false);
-  
   const [nome, setNome] = useState(nomeArea as string || "");
   const [preco, setPreco] = useState(valorAtual as string || "");
-
-  useEffect(() => {
-    const carregarTema = async () => {
-      const salvo = await AsyncStorage.getItem('@vizzo_theme');
-      if (salvo !== null) setIsDark(salvo === 'dark');
-    };
-    carregarTema();
-  }, []);
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-  };
 
   async function handleSalvarAlteracoes() {
     if (!nome || !preco) {
@@ -82,7 +68,7 @@ export default function GestaoArea() {
           .insert({
             nome: nome,
             valor_reserva: precoFormatado,
-            id_condominio: idCondominio // A mágica acontece aqui!
+            id_condominio: idCondominio
           });
 
         if (error) throw error;
@@ -105,7 +91,8 @@ export default function GestaoArea() {
         <Text style={[styles.headerTitle, { color: theme.text }]}>Configurar Espaço</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Removidas as injeções manuais de cor de fundo que estavam quebrando o InputField */}
         <InputField 
           label="NOME DA ÁREA"
           value={nome}

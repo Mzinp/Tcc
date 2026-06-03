@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 // Seus componentes
 import ArrowBack from '@/components/ArrowVoltar';
@@ -12,29 +12,14 @@ import PrimaryButton from "@/components/PrimaryButton";
 
 export default function CadastroComunicado() {
   const router = useRouter();
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
   
-  const [isDark, setIsDark] = useState(true);
   const [loading, setLoading] = useState(false);
   
   // Estados do formulário
   const [titulo, setTitulo] = useState("");
   const [conteudo, setConteudo] = useState("");
   const [tipo, setTipo] = useState<"Informativo" | "Urgente">("Informativo");
-
-  useEffect(() => {
-    const carregarTema = async () => {
-      const salvo = await AsyncStorage.getItem('@vizzo_theme');
-      if (salvo !== null) setIsDark(salvo === 'dark');
-    };
-    carregarTema();
-  }, []);
-
-  const theme = {
-    bg: isDark ? COLORS.dark.bg : COLORS.light.bg,
-    text: isDark ? COLORS.dark.text : COLORS.light.text,
-    card: isDark ? COLORS.dark.card : COLORS.light.card,
-    border: isDark ? COLORS.dark.border : COLORS.light.border,
-  };
 
   async function handleEnviar() {
     if (!titulo.trim() || !conteudo.trim()) {
@@ -82,7 +67,7 @@ export default function CadastroComunicado() {
         <Text style={[styles.headerTitle, { color: theme.text }]}>Novo Comunicado</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.form}>
           <Text style={styles.label}>NÍVEL DE IMPORTÂNCIA</Text>
           <View style={styles.typeContainer}>
@@ -109,6 +94,7 @@ export default function CadastroComunicado() {
             </TouchableOpacity>
           </View>
 
+          {/* Deixando o InputField gerenciar o tema internamente sem injeção de cor manual */}
           <InputField 
             label="TÍTULO DO AVISO"
             placeholder="Ex: Manutenção de Elevadores"
@@ -128,7 +114,7 @@ export default function CadastroComunicado() {
 
           <View style={{ marginTop: 20 }}>
             {loading ? (
-              <ActivityIndicator size="large" color={COLORS.primary} />
+              <ActivityIndicator size="large" color={theme.primary} />
             ) : (
               <PrimaryButton 
                 title="PUBLICAR NO MURAL" 

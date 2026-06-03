@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
-import { COLORS } from "@/consts/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
 
 // Seus componentes personalizados
 import ArrowBack from '@/components/ArrowVoltar';
@@ -12,6 +12,7 @@ import PrimaryButton from "@/components/PrimaryButton";
 
 export default function CadastroEncomendas() {
   const router = useRouter();
+  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
   const [loading, setLoading] = useState(false);
   
   // Estados do Formulário
@@ -21,7 +22,7 @@ export default function CadastroEncomendas() {
   const [descricao, setDescricao] = useState("");
   const [codigoRastreio, setCodigoRastreio] = useState("");
 
-  // Busca moradores em tempo real
+  // Busca moradores em tempo real (Mantida intacta)
   useEffect(() => {
     if (busca.length > 2 && !moradorSelecionado) {
       procurarMoradores();
@@ -82,15 +83,15 @@ export default function CadastroEncomendas() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
-        <ArrowBack cor={COLORS.primary} />
-        <Text style={styles.headerTitle}>Novo Recebimento</Text>
+        <ArrowBack cor={theme.primary} />
+        <Text style={[styles.headerTitle, { color: theme.primary }]}>Novo Recebimento</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         
-        {/* Campo de Busca com seu novo InputField */}
+        {/* Campo de Busca com seu InputField adaptado ao tema */}
         <InputField 
           label="DESTINATÁRIO (MORADOR)"
           placeholder="Digite o nome para buscar..."
@@ -102,22 +103,22 @@ export default function CadastroEncomendas() {
           icon="person-outline"
         />
 
-        {/* Dropdown de resultados da busca */}
+        {/* Dropdown de resultados da busca adaptado dinamicamente */}
         {moradores.length > 0 && !moradorSelecionado && (
-          <View style={styles.dropdown}>
+          <View style={[styles.dropdown, { backgroundColor: theme.card, borderColor: theme.border }]}>
             {moradores.map((m) => (
               <TouchableOpacity 
                 key={m.id_morador} 
-                style={styles.dropdownItem}
+                style={[styles.dropdownItem, { borderBottomColor: theme.border }]}
                 onPress={() => {
                   setMoradorSelecionado(m);
                   setBusca(m.nome);
                   setMoradores([]);
                 }}
               >
-                <Ionicons name="business-outline" size={16} color={COLORS.primary} />
-                <Text style={styles.dropdownText}>
-                  {m.nome} <Text style={{fontWeight: '400'}}>— Ap: {m.num_apartamento}</Text>
+                <Ionicons name="business-outline" size={16} color={theme.primary} />
+                <Text style={[styles.dropdownText, { color: theme.text }]}>
+                  {m.nome} <Text style={{ fontWeight: '400', color: theme.subText }}>— Ap: {m.num_apartamento}</Text>
                 </Text>
               </TouchableOpacity>
             ))}
@@ -144,7 +145,7 @@ export default function CadastroEncomendas() {
 
         <View style={{ marginTop: 25 }}>
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.primary} />
+            <ActivityIndicator size="large" color={theme.primary} />
           ) : (
             <PrimaryButton 
               title="REGISTRAR ENCOMENDA" 
@@ -158,7 +159,7 @@ export default function CadastroEncomendas() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fdfdfd' },
+  container: { flex: 1 },
   header: { 
     paddingTop: 60, 
     paddingHorizontal: 20, 
@@ -169,17 +170,14 @@ const styles = StyleSheet.create({
   headerTitle: { 
     fontSize: 22, 
     fontWeight: 'bold', 
-    color: COLORS.primary, 
     marginLeft: 15 
   },
   content: { padding: 25 },
   dropdown: {
-    backgroundColor: 'white',
     borderRadius: 12,
     marginTop: -10,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#eee',
     elevation: 4,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -189,13 +187,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f9f9f9'
+    borderBottomWidth: 1
   },
   dropdownText: { 
     marginLeft: 10, 
     fontSize: 14, 
-    color: '#333', 
     fontWeight: '600' 
   }
 });
