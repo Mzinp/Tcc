@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
-import DateTimePicker from '@react-native-community/datetimepicker'; // Importando o Calendário
-import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
-
-// Seus componentes
+import DateTimePicker from '@react-native-community/datetimepicker'; 
+import { useAppTheme } from "@/context/ThemeContext"; 
 import ArrowBack from '@/components/ArrowVoltar';
 import InputField from "@/components/InputField";
 import PrimaryButton from "@/components/PrimaryButton";
@@ -15,16 +13,17 @@ import { Ionicons } from "@expo/vector-icons";
 export default function CadastroReserva() {
   const router = useRouter();
   const params = useLocalSearchParams(); 
-  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
+  const { theme } = useAppTheme(); 
   
   const [loading, setLoading] = useState(false);
   const [precoArea, setPrecoArea] = useState(0);
+  const [idCondominio, setIdCondominio] = useState<string | null>(null);
   
-  // Estados do formulário
   const [dataObjeto, setDataObjeto] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
   const [dataFormatada, setDataFormatada] = useState("");
   
+  // Seus campos que eu tinha esquecido!
   const [horario, setHorario] = useState("");
   const [observacao, setObservacao] = useState("");
 
@@ -33,25 +32,26 @@ export default function CadastroReserva() {
   }, []);
 
   async function carregarDadosIniciais() {
-    // Busca Preço Real da Área no Banco
     try {
         const { data, error } = await supabase
             .from('tb_area_comum')
-            .select('valor_reserva')
+            .select('valor_reserva, id_condominio')
             .eq('id_area', params.areaId)
             .single();
         
-        if (data) setPrecoArea(data.valor_reserva || 0);
+        if (data) {
+          setPrecoArea(data.valor_reserva || 0);
+          setIdCondominio(data.id_condominio);
+        }
     } catch (e) {
         console.log("Erro ao buscar preço");
     }
   }
 
   const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowCalendar(false); // Fecha o calendário
+    setShowCalendar(Platform.OS === "ios"); 
     if (selectedDate) {
       setDataObjeto(selectedDate);
-      // Formata para exibição visual (DD/MM/AAAA)
       const dia = String(selectedDate.getDate()).padStart(2, '0');
       const mes = String(selectedDate.getMonth() + 1).padStart(2, '0');
       const ano = selectedDate.getFullYear();
@@ -68,10 +68,24 @@ export default function CadastroReserva() {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      // 1. VERIFICAÇÃO DE DISPONIBILIDADE
-      const dataParaBanco = dataObjeto.toISOString().split('T')[0]; // Converte para YYYY-MM-DD
+      if (!user) throw new Error("Usuário não autenticado");
 
+      // Pega o id do morador correto
+      const { data: morador } = await supabase
+        .from('tb_morador')
+        .select('id_morador')
+        .eq('id_morador', user.id)
+        .single();
+
+      if (!morador) {
+        Alert.alert("Erro", "Apenas moradores podem fazer reservas.");
+        setLoading(false);
+        return;
+      }
+
+      const dataParaBanco = dataObjeto.toISOString().split('T')[0]; 
+
+      // Verificação de conflito de data
       const { data: conflito } = await supabase
         .from('tb_reserva')
         .select('id_reserva')
@@ -86,33 +100,27 @@ export default function CadastroReserva() {
         return;
       }
 
-      // 2. BUSCA ID DO CONDOMÍNIO
-      const { data: areaInfo } = await supabase
-        .from('tb_area_comum')
-        .select('id_condominio')
-        .eq('id_area', params.areaId)
-        .single();
-
-      // 3. SALVA A RESERVA
+      // Insert completo para o banco do Mateus
       const { error } = await supabase.from('tb_reserva').insert([{
-        id_morador: user?.id,
-        id_condominio: areaInfo?.id_condominio,
+        id_morador: morador.id_morador,
+        id_condominio: idCondominio,
         id_area: params.areaId,
         area_comum: params.areaNome, 
         data_reserva: dataParaBanco,
         horario: horario,
+        observacao: observacao,
         valor_total: precoArea, 
         status: 'Pendente'
       }]);
 
       if (error) throw error;
 
-      Alert.alert("Sucesso", "Sua reserva foi enviada para aprovação!");
+      Alert.alert("Sucesso", "Sua reserva foi enviada para aprovação do síndico!");
       router.back();
 
     } catch (error) {
       console.log(error);
-      Alert.alert("Erro", "Falha ao salvar reserva.");
+      Alert.alert("Erro", "Falha ao salvar reserva. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -134,7 +142,6 @@ export default function CadastroReserva() {
         </View>
 
         <View style={{ marginTop: 20 }}>
-          {/* CAMPO DE DATA COM CALENDÁRIO */}
           <Text style={styles.label}>DATA DA RESERVA</Text>
           <TouchableOpacity 
             style={[styles.calendarTrigger, { backgroundColor: theme.card || theme.input, borderColor: theme.border }]} 
@@ -151,7 +158,7 @@ export default function CadastroReserva() {
               value={dataObjeto}
               mode="date"
               display="calendar"
-              minimumDate={new Date()} // Não permite reservar datas passadas
+              minimumDate={new Date()} 
               onChange={onChangeDate}
             />
           )}
@@ -166,7 +173,7 @@ export default function CadastroReserva() {
 
           <InputField 
             label="OBSERVAÇÕES (OPCIONAL)"
-            placeholder="Ex: Aniversário..."
+            placeholder="Ex: Aniversário de 15 anos..."
             value={observacao}
             onChangeText={setObservacao}
             icon="document-text-outline"
@@ -174,7 +181,6 @@ export default function CadastroReserva() {
           />
         </View>
 
-        {/* RESUMO DO PREÇO DINÂMICO */}
         <View style={[styles.priceCard, { backgroundColor: theme.card || theme.input, borderColor: theme.border }]}>
             <View>
                 <Text style={[styles.priceLabel, { color: theme.subText }]}>Valor do Espaço</Text>
@@ -211,8 +217,6 @@ const styles = StyleSheet.create({
   label: { fontSize: 10, fontWeight: '900', color: COLORS.primary, marginBottom: 8, letterSpacing: 1 },
   areaBadge: { backgroundColor: 'rgba(45, 121, 243, 0.1)', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary },
   areaText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 16 },
-  
-  // Estilos do acionador do calendário
   calendarTrigger: { 
     flexDirection: 'row', 
     alignItems: 'center', 
@@ -222,8 +226,6 @@ const styles = StyleSheet.create({
     marginBottom: 25 
   },
   calendarText: { marginLeft: 12, fontSize: 16 },
-
-  // Card de Preço
   priceCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -235,6 +237,5 @@ const styles = StyleSheet.create({
   },
   priceLabel: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 },
   priceValue: { fontSize: 22, fontWeight: 'bold' },
-
   footerNote: { textAlign: 'center', fontSize: 12, marginTop: 25, lineHeight: 18, paddingHorizontal: 10 }
 });

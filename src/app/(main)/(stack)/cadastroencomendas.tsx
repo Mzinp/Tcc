@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,9 +45,22 @@ export default function CadastroEncomendas() {
     }
   }
 
+  // FUNÇÃO AUXILIAR DE ALERTA ADAPTADA PARA PC (WEB) E CELULAR
+  const dispararAlerta = (titulo: string, mensagem: string, acaoSucesso?: () => void) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${titulo}\n\n${mensagem}`);
+      if (acaoSucesso) acaoSucesso();
+      return;
+    }
+
+    Alert.alert(titulo, mensagem, [
+      { text: "OK", onPress: () => { if (acaoSucesso) acaoSucesso(); } }
+    ]);
+  };
+
   async function handleSalvar() {
     if (!moradorSelecionado || !descricao) {
-      Alert.alert("Atenção", "Selecione um morador e descreva a encomenda.");
+      dispararAlerta("Atenção", "Selecione um morador e descreva a encomenda.");
       return;
     }
 
@@ -72,11 +85,13 @@ export default function CadastroEncomendas() {
 
       if (error) throw error;
 
-      Alert.alert("Sucesso", "Encomenda registrada! O morador será avisado.");
-      router.back();
+      dispararAlerta("Sucesso", "Encomenda registrada! O morador será avisado.", () => {
+        router.back();
+      });
+      
     } catch (error) {
       console.log(error);
-      Alert.alert("Erro", "Falha ao salvar no banco de dados.");
+      dispararAlerta("Erro", "Falha ao salvar no banco de dados.");
     } finally {
       setLoading(false);
     }
@@ -85,8 +100,8 @@ export default function CadastroEncomendas() {
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <View style={styles.header}>
-        <ArrowBack cor={theme.primary} />
-        <Text style={[styles.headerTitle, { color: theme.primary }]}>Novo Recebimento</Text>
+        <ArrowBack cor={theme.text} />
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Novo Recebimento</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -116,7 +131,7 @@ export default function CadastroEncomendas() {
                   setMoradores([]);
                 }}
               >
-                <Ionicons name="business-outline" size={16} color={theme.primary} />
+                <Ionicons name="business-outline" size={16} color={theme.text} />
                 <Text style={[styles.dropdownText, { color: theme.text }]}>
                   {m.nome} <Text style={{ fontWeight: '400', color: theme.subText }}>— Ap: {m.num_apartamento}</Text>
                 </Text>
@@ -145,7 +160,7 @@ export default function CadastroEncomendas() {
 
         <View style={{ marginTop: 25 }}>
           {loading ? (
-            <ActivityIndicator size="large" color={theme.primary} />
+            <ActivityIndicator size="large" color={theme.text} />
           ) : (
             <PrimaryButton 
               title="REGISTRAR ENCOMENDA" 

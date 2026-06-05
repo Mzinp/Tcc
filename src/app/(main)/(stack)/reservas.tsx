@@ -12,28 +12,33 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { COLORS } from "@/consts/colors";
 import ArrowBack from "@/components/ArrowVoltar";
 import { supabase } from "@/lib/supabase";
-import { useAppTheme } from "@/context/ThemeContext"; // Conectando ao tema global
+import { useAppTheme } from "@/context/ThemeContext"; 
 
 export default function Reservas() {
   const router = useRouter();
-  const { theme, isDark } = useAppTheme(); // Puxa as cores e o estado atual do tema
+  const { theme, isDark } = useAppTheme(); 
+  
   const [loading, setLoading] = useState(true);
   const [userType, setUserType] = useState<"admin" | "user">("user");
   const [areas, setAreas] = useState<any[]>([]);
 
-  // Carrega as áreas reais do banco de dados
+  // Pega a data de hoje no formato YYYY-MM-DD
+  const hojeString = new Date().toLocaleDateString('en-CA');
+
+  // Busca as áreas atreladas ao condomínio do usuário
   async function carregarDados() {
     try {
       setLoading(true);
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      
       if (!user) return;
 
       let idCondominioUsuario = null;
       let isAdmin = false;
 
-      // 1. Verifica se é Admin e pega o ID do condomínio
+      // 1. Verifica se o usuário é Síndico (Administrador)
       const { data: admin } = await supabase
         .from("tb_administrador")
         .select("id_administrador, id_condominio")
@@ -44,7 +49,7 @@ export default function Reservas() {
         isAdmin = true;
         idCondominioUsuario = admin.id_condominio;
       } else {
-        // 2. Se não for admin, verifica se é morador e pega o ID
+        // 2. Se não for síndico, busca como Morador
         const { data: morador } = await supabase
           .from("tb_morador")
           .select("id_morador, id_condominio")
@@ -64,15 +69,34 @@ export default function Reservas() {
         return;
       }
 
-      // 3. Busca áreas cadastradas EXATAMENTE do condomínio do usuário
-      const { data, error } = await supabase
+      // 3. Puxa as áreas de lazer exclusivas daquele condomínio
+      const { data: areasData, error } = await supabase
         .from("tb_area_comum")
         .select("*")
         .eq("id_condominio", idCondominioUsuario)
         .order("nome", { ascending: true });
 
       if (error) throw error;
-      setAreas(data || []);
+
+      // 4. Busca as reservas DE HOJE no banco
+      const { data: reservasHoje } = await supabase
+        .from("tb_reserva")
+        .select("id_area")
+        .eq("id_condominio", idCondominioUsuario)
+        .eq("data_reserva", hojeString)
+        .neq("status", "Recusado"); // Não conta se foi rejeitada
+
+      // 5. Mescla as áreas com a informação de ocupação
+      const areasComStatus = (areasData || []).map((area) => {
+        const reservada = reservasHoje?.some((reserva) => reserva.id_area === area.id_area);
+        return {
+          ...area,
+          isOcupadaHoje: !!reservada, // true se estiver reservada hoje, false se não
+        };
+      });
+
+      setAreas(areasComStatus);
+      
     } catch (error) {
       console.log("Erro ao carregar áreas:", error);
     } finally {
@@ -80,10 +104,11 @@ export default function Reservas() {
     }
   }
 
+  // Recarrega os dados toda vez que a tela entra em foco
   useFocusEffect(
     useCallback(() => {
       carregarDados();
-    }, []),
+    }, [])
   );
 
   return (
@@ -130,13 +155,7 @@ export default function Reservas() {
           showsVerticalScrollIndicator={false}
         >
           {areas.length === 0 && (
-            <Text
-              style={{
-                color: theme.subText,
-                textAlign: "center",
-                marginTop: 20,
-              }}
-            >
+            <Text style={{ color: theme.subText, textAlign: "center", marginTop: 20 }}>
               Nenhuma área cadastrada pelo síndico.
             </Text>
           )}
@@ -169,9 +188,20 @@ export default function Reservas() {
                     </Text>
                   </Text>
                 </View>
+                
+                {/* MARCADOR DE DISPONIBILIDADE NO BANCO DE DADOS */}
+                <Text style={{ 
+                  fontSize: 10, 
+                  marginTop: 4, 
+                  fontWeight: "bold", 
+                  color: area.isOcupadaHoje ? COLORS.red : COLORS.green 
+                }}>
+                  {area.isOcupadaHoje ? "🔴 OCUPADA HOJE" : "🟢 LIVRE HOJE"}
+                </Text>
               </View>
 
               {userType === "admin" ? (
+                // BOTÃO DO SÍNDICO (Ajustar valor/nome da área)
                 <TouchableOpacity
                   style={[
                     styles.adminBtn,
@@ -188,15 +218,18 @@ export default function Reservas() {
                     })
                   }
                 >
-                  <Text
-                    style={[styles.adminBtnText, { color: theme.primary }]}
-                  >
+                  <Text style={[styles.adminBtnText, { color: theme.primary }]}>
                     AJUSTAR
                   </Text>
                 </TouchableOpacity>
               ) : (
+                // BOTÃO DO MORADOR (Trava se estiver ocupado)
                 <TouchableOpacity
-                  style={[styles.reservaBtn, { backgroundColor: theme.primary }]}
+                  style={[
+                    styles.reservaBtn, 
+                    { backgroundColor: area.isOcupadaHoje ? theme.border : theme.primary }
+                  ]}
+                  disabled={area.isOcupadaHoje}
                   onPress={() =>
                     router.push({
                       pathname: "/(main)/(stack)/cadastroreserva",
@@ -204,7 +237,9 @@ export default function Reservas() {
                     })
                   }
                 >
-                  <Text style={styles.reservaBtnText}>RESERVAR</Text>
+                  <Text style={[styles.reservaBtnText, { color: area.isOcupadaHoje ? theme.subText : "white" }]}>
+                    {area.isOcupadaHoje ? "INDISPONÍVEL" : "RESERVAR"}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -212,7 +247,7 @@ export default function Reservas() {
         </ScrollView>
       )}
 
-      {/* Botão para Admin Adicionar Nova Área */}
+      {/* Botão Flutuante (FAB) para o Admin cadastrar novas áreas */}
       {userType === "admin" && (
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: theme.primary }]}
@@ -221,29 +256,6 @@ export default function Reservas() {
           <Ionicons name="add" size={30} color="white" />
         </TouchableOpacity>
       )}
-
-      {/* Mudar Papel do modo teste adaptado ao tema */}
-      <View style={styles.testSwitcher}>
-        <TouchableOpacity
-          style={[
-            styles.floatingTest,
-            { backgroundColor: theme.card, borderColor: theme.primary },
-          ]}
-          onPress={() => setUserType(userType === "admin" ? "user" : "admin")}
-        >
-          <Ionicons name="swap-horizontal" size={16} color={theme.primary} />
-          <Text
-            style={{
-              fontSize: 10,
-              color: theme.text,
-              fontWeight: "bold",
-              marginLeft: 8,
-            }}
-          >
-            MODO TESTE: {userType === "admin" ? "SÍNDICO" : "MORADOR"}
-          </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
@@ -262,7 +274,7 @@ const styles = StyleSheet.create({
   },
   roleText: { color: "white", fontSize: 10, fontWeight: "900" },
   subtitle: { fontSize: 12, fontWeight: "500" },
-  content: { padding: 25, paddingBottom: 150 },
+  content: { padding: 25, paddingBottom: 100 }, 
   card: {
     padding: 15,
     borderRadius: 20,
@@ -302,28 +314,12 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: 25,
-    bottom: 100,
+    bottom: 30, 
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
     elevation: 5,
-  },
-  testSwitcher: {
-    position: "absolute",
-    bottom: 30,
-    width: "100%",
-    alignItems: "center",
-  },
-  floatingTest: {
-    flexDirection: "row",
-    padding: 15,
-    borderRadius: 30,
-    borderWidth: 1,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
   },
 });

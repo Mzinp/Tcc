@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Modal, Dimensions, ActivityIndicator, Alert, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, router } from 'expo-router'; 
@@ -146,6 +146,12 @@ export default function Perfil() {
     });
   };
 
+  const handleSuporteEmail = () => {
+    const email = "SuporteVizzoEquipeAllSet@gmail.com";
+    const subject = "Suporte App Vizzo";
+    Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}`);
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.replace("/login"); 
@@ -204,7 +210,7 @@ export default function Perfil() {
             { icon: 'color-filter-outline', label: isDark ? 'Modo Claro (Acessibilidade)' : 'Modo Escuro (Padrão)', action: toggleTheme },
             { icon: 'notifications-outline', label: 'Notificações', action: () => {} },
             { icon: 'shield-checkmark-outline', label: 'Privacidade', action: () => {} },
-            { icon: 'help-circle-outline', label: 'Ajuda e Suporte', action: () => {} },
+            { icon: 'help-circle-outline', label: 'Ajuda e Suporte', action: handleSuporteEmail }, // Função de e-mail aqui!
           ].map((item, index) => (
             <TouchableOpacity 
               key={index} 

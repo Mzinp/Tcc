@@ -1,40 +1,29 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  StatusBar,
-  Linking,
-  Alert,
-} from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, Modal, TextInput } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { COLORS } from "@/consts/colors";
 import ArrowBack from "@/components/ArrowVoltar";
-import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
+import { useAppTheme } from "@/context/ThemeContext";
 
 export default function DetalheServico() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { theme } = useAppTheme(); // Injetando o cérebro do tema global de forma reativa
+  const { theme } = useAppTheme();
+  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [mensagem, setMensagem] = useState("");
 
-  // Pegando os dados passados pelo Marketplace
-  const { id, nome, prestador, preco, descricao, id_morador } = params;
-
-  const abrirWhatsApp = () => {
-    if (!params.telefone) {
-      Alert.alert("Erro", "Este morador não cadastrou um telefone de contato.");
+  const handleEnviarSolicitacao = () => {
+    const proibidas = ["safada", "gostosa", "linda", "nudes"];
+    if (proibidas.some(p => mensagem.toLowerCase().includes(p))) {
+      Alert.alert("Atenção", "Mensagem imprópria. O Vizzo preza pelo respeito.");
       return;
     }
-    
-    // Remove tudo que não é número do telefone
-    const telLimpo = params.telefone.toString().replace(/\D/g, "");
-    const url = `whatsapp://send?phone=55${telLimpo}&text=Olá! Vi seu serviço de ${nome} no Vizzo e gostaria de contratar.`;
-    
-    Linking.openURL(url).catch(() => {
-      Alert.alert("Erro", "O WhatsApp não está instalado no seu dispositivo.");
+
+    setModalVisible(false);
+    router.push({
+      pathname: "/(main)/(modal)/sucesso",
+      params: { mensagem: "Solicitação enviada ao prestador!" }
     });
   };
 
@@ -42,114 +31,75 @@ export default function DetalheServico() {
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <StatusBar barStyle="light-content" />
       
-      {/* Header com imagem ou ícone grande */}
-      <View style={[styles.headerImage, { backgroundColor: theme.card }]}>
-        <View style={styles.navBar}>
-           <ArrowBack cor="#fff" />
-        </View>
-        <Ionicons name="construct-outline" size={80} color={theme.primary} />
-      </View>
-
+      {/* ScrollView com o conteúdo */}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.mainInfo}>
-          <Text style={[styles.title, { color: theme.text }]}>{nome}</Text>
-          <Text style={[styles.price, { color: theme.primary }]}>{preco}</Text>
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-        {/* Informações do Prestador */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.subText }]}>PRESTADOR</Text>
-          <View style={styles.row}>
-            <Ionicons name="person-circle-outline" size={24} color={theme.subText} />
-            <Text style={[styles.infoText, { color: theme.text }]}>{prestador}</Text>
-          </View>
-        </View>
-
-        {/* Descrição Detalhada */}
-        <View style={styles.section}>
-          <Text style={[styles.label, { color: theme.subText }]}>SOBRE O SERVIÇO</Text>
-          <Text style={[styles.description, { color: theme.text }]}>
-            {descricao || "O morador não forneceu uma descrição detalhada para este serviço."}
-          </Text>
-        </View>
-
-        {/* Card de Segurança */}
-        <View style={[styles.safetyCard, { backgroundColor: theme.card }]}>
-          <Ionicons name="shield-checkmark" size={20} color={COLORS.green} />
-          <Text style={[styles.safetyText, { color: theme.subText }]}>
-            Negocie sempre pelo chat do Vizzo para sua segurança.
-          </Text>
-        </View>
+        <View style={styles.navBar}><ArrowBack cor={theme.text} /></View>
+        <Text style={[styles.title, { color: theme.text }]}>{params.nome}</Text>
+        <Text style={[styles.price, { color: theme.primary }]}>{params.preco}</Text>
+        <Text style={[styles.info, { color: theme.text }]}>{params.descricao}</Text>
       </ScrollView>
 
-      {/* Botão de Ação Fixo */}
+      {/* FOOTER FIXO NO RODAPÉ */}
       <View style={[styles.footer, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
         <TouchableOpacity 
-          style={[styles.btnChat, { backgroundColor: theme.primary }]}
-          onPress={() => router.push({
-            pathname: "/(main)/(modal)/sucesso",
-            params: { 
-                mensagem: `Solicitação enviada para ${prestador}`,
-                proximaTela: "/(main)/(tabs)/marketplace"
-            }
-          })}
+          style={[styles.btnChat, { backgroundColor: theme.primary }]} 
+          onPress={() => setModalVisible(true)}
         >
-          <Ionicons name="chatbubble-ellipses" size={20} color="white" />
-          <Text style={styles.btnChatText}>CONTRATAR AGORA</Text>
+          <Text style={styles.btnChatText}>SOLICITAR CONTATO</Text>
         </TouchableOpacity>
       </View>
+
+      {/* MODAL PROFISSIONAL */}
+      <Modal animationType="slide" transparent={true} visible={modalVisible}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Nova Solicitação</Text>
+            <TextInput 
+              style={[styles.modalInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.bg }]}
+              placeholder="Escreva detalhes para o prestador..."
+              placeholderTextColor={theme.subText}
+              multiline
+              value={mensagem}
+              onChangeText={setMensagem}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.btnCancel}>
+                <Text style={{ color: theme.subText }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleEnviarSolicitacao} style={[styles.btnConfirm, { backgroundColor: theme.primary }]}>
+                <Text style={{ color: 'white', fontWeight: 'bold' }}>Enviar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerImage: {
-    height: 220,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  navBar: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
   content: { padding: 25, paddingBottom: 120 },
-  mainInfo: { marginBottom: 20 },
-  title: { fontSize: 26, fontWeight: "bold", marginBottom: 8 },
-  price: { fontSize: 22, fontWeight: "800" },
-  divider: { height: 1, width: "100%", marginVertical: 20 },
-  section: { marginBottom: 30 },
-  label: { fontSize: 10, fontWeight: "bold", letterSpacing: 1.5, marginBottom: 12 },
-  row: { flexDirection: "row", alignItems: "center", gap: 10 },
-  infoText: { fontSize: 16, fontWeight: "500" },
-  description: { fontSize: 15, lineHeight: 24, opacity: 0.8 },
-  safetyCard: {
-    flexDirection: "row",
-    padding: 15,
-    borderRadius: 15,
-    alignItems: "center",
-    gap: 12,
-  },
-  safetyText: { fontSize: 12, flex: 1 },
+  navBar: { marginBottom: 20, marginTop: 40 },
+  title: { fontSize: 26, fontWeight: 'bold', marginBottom: 8 },
+  price: { fontSize: 22, fontWeight: '800', marginBottom: 20 },
+  info: { fontSize: 16, lineHeight: 24 },
   footer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 0,
-    width: "100%",
+    left: 0,
+    right: 0,
     padding: 25,
     paddingBottom: 40,
     borderTopWidth: 1,
   },
-  btnChat: {
-    height: 60,
-    borderRadius: 18,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 10,
-  },
-  btnChatText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  btnChat: { height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+  btnChatText: { color: "white", fontWeight: 'bold', fontSize: 16 },
+  modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
+  modalContent: { padding: 25, borderRadius: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
+  modalInput: { borderWidth: 1, borderRadius: 12, padding: 15, height: 100, marginBottom: 15 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
+  btnCancel: { padding: 15 },
+  btnConfirm: { padding: 15, borderRadius: 12, paddingHorizontal: 30 }
 });

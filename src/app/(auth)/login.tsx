@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router"; 
 import { supabase } from "../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
+import ArrowBack from '@/components/ArrowVoltar'; // Importando a seta de voltar
 
 export default function Login() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function Login() {
 
       const userId = authData.user.id;
 
-      // MODIFICADO: Agora buscamos também a coluna "nome" de cada tabela
+      // Buscando a coluna "nome" de cada tabela
       const [resAdmin, resMorador] = await Promise.all([
         supabase.from("tb_administrador").select("nome").eq("id_administrador", userId).maybeSingle(),
         supabase.from("tb_morador").select("nome").eq("id_morador", userId).maybeSingle()
@@ -88,11 +89,9 @@ export default function Login() {
         } else if (resMorador.data && resMorador.data.nome) {
           nomeUsuario = resMorador.data.nome.split(" ")[0];
         } else {
-          // Fallback caso o campo nome esteja vazio no banco
           nomeUsuario = resAdmin.data ? "Administrador" : "Morador";
         }
 
-        // Mostra a mensagem personalizada com o nome real vindo do banco
         mostrarAviso(`Seja bem-vindo, ${nomeUsuario}!`, "success");
       } else {
         mostrarAviso("Perfil não encontrado no sistema", "error");
@@ -111,6 +110,11 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1, backgroundColor: theme.bg }}
     >
+      {/* Botão de voltar flutuante no topo esquerdo da tela */}
+      <View style={styles.backButtonContainer}>
+        <ArrowBack cor={theme.text} />
+      </View>
+
       {/* Modal de Mensagem Customizada (Substitui o Alert) */}
       <Modal transparent visible={msgVisible} animationType="fade">
         <View style={styles.modalOverlay}>
@@ -155,7 +159,15 @@ export default function Login() {
               value={senha}
               onChangeText={setSenha}
             />
+            
           </View>
+          // ... abaixo do TextInput da senha
+<TouchableOpacity 
+  onPress={() => router.push("/(auth)/forgotPassword")} 
+  style={{ alignSelf: 'flex-end', marginBottom: 20 }}
+>
+  <Text style={{ color: '#8b8e98', fontSize: 12 }}>Esqueceu sua senha?</Text>
+</TouchableOpacity>
 
           <TouchableOpacity 
             style={[styles.mainButton, loading && { opacity: 0.7 }]} 
@@ -175,6 +187,13 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
+  backButtonContainer: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 40,
+    left: 20,
+    zIndex: 10,
+  },
   centerContent: { flexGrow: 1, justifyContent: "center", padding: 25 },
   loginForm: {
     padding: 35,
