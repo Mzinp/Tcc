@@ -70,74 +70,67 @@ export default function Perfil() {
   }
 
   async function alterarFotoPerfil() {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert("Permissão necessária", "Precisamos de acesso às suas fotos para alterar a imagem de perfil.");
-        return;
-      }
+  try {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
 
-      const resultado = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true, 
-        aspect: [1, 1],
-        quality: 0.7, 
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5, // Reduzimos um pouco a qualidade para não pesar na rede
+    });
+
+    if (result.canceled) return;
+
+    setUploading(true);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Pega o caminho da imagem
+    const uri = result.assets[0].uri;
+    const fileName = `${user.id}-${Date.now()}.jpg`;
+
+    // Vamos transformar a URI em um formato de arquivo (FormData) 
+    // que o Supabase aceita bem no celular
+    const formData = new FormData();
+    formData.append('file', {
+      uri: uri,
+      name: fileName,
+      type: 'image/jpeg',
+    } as any);
+
+    // Upload usando o formData (muito mais estável no mobile)
+    const { error: uploadError } = await supabase.storage
+      .from('perfil')
+      .upload(fileName, formData, {
+        contentType: 'image/jpeg',
       });
 
-      if (resultado.canceled || !resultado.assets || resultado.assets.length === 0) {
-        return; 
-      }
+    if (uploadError) throw uploadError;
 
-      const imagemSelecionada = resultado.assets[0];
-      setUploading(true);
+    // Pega a URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from('perfil')
+      .getPublicUrl(fileName);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    // Atualiza o banco de dados
+    await supabase
+      .from(dadosCompletos?.tipo === 'ADM' ? "tb_administrador" : "tb_morador")
+      .update({ foto_url: publicUrl })
+      .eq(dadosCompletos?.tipo === 'ADM' ? "id_administrador" : "id_morador", user.id);
 
-      const formData = new FormData();
-      const nomeArquivo = `${user.id}-${Date.now()}.jpg`; 
+    setFotoUrl(publicUrl);
+    Alert.alert("Sucesso", "Foto atualizada!");
 
-      formData.append('file', {
-        uri: imagemSelecionada.uri,
-        name: nomeArquivo,
-        type: 'image/jpeg',
-      } as any);
-
-      const { error: storageError } = await supabase.storage
-        .from('avatars')
-        .upload(nomeArquivo, formData, {
-          contentType: 'image/jpeg',
-          upsert: true
-        });
-
-      if (storageError) throw storageError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(nomeArquivo);
-
-      if (dadosCompletos?.tipo === 'ADM') {
-        await supabase
-          .from("tb_administrador")
-          .update({ foto_url: publicUrl })
-          .eq("id_administrador", user.id);
-      } else {
-        await supabase
-          .from("tb_morador")
-          .update({ foto_url: publicUrl })
-          .eq("id_morador", user.id);
-      }
-
-      setFotoUrl(publicUrl);
-      Alert.alert("Sucesso", "Sua foto de perfil foi atualizada com sucesso!");
-
-    } catch (error: any) {
-      console.log("Erro no upload:", error);
-      Alert.alert("Erro no Servidor", "Não foi possível enviar a imagem. Tente novamente.");
-    } finally {
-      setUploading(false);
-    }
+  } catch (error) {
+    console.error("Erro detalhado:", error);
+    Alert.alert("Erro", "Não foi possível enviar a imagem.");
+  } finally {
+    setUploading(false);
   }
+}
 
   const verMeusDados = () => {
     router.push({

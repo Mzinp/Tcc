@@ -9,11 +9,11 @@ export default function Navegacao() {
   const pathname = usePathname();
   const { theme } = useAppTheme(); // Puxando o tema dinâmico e reativo do app
 
-  // Lista de navegação com o Chat comentado para você alinhar com o grupo amanhã
+  // Ajustado: Descomentamos o Chat e apontamos para a rota /mensagens
   const menuItems = [
     { name: "Início", icon: "home", route: "/home" },
     { name: "Mercado", icon: "cart", route: "/marketplace" },
-    /* { name: "Chat", icon: "chatbubbles", route: "/chat" }, */ // Comentado temporariamente
+    { name: "Chat", icon: "chatbubbles", route: "/mensagens" }, 
     { name: "Perfil", icon: "person", route: "/perfil" }, 
   ];
 

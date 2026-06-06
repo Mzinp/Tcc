@@ -1,11 +1,20 @@
-import { Stack } from "expo-router";
+import { Tabs } from "expo-router";
+import { useAppTheme } from "@/context/ThemeContext";
 
-export default function MainLayout() {
+export default function TabsLayout() {
+  const { theme } = useAppTheme();
+
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(stack)" options={{ headerShown: false }} />
-      <Stack.Screen name="(modal)" options={{ headerShown: false, presentation: 'modal' }} />
-    </Stack>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: 'none' }, // Mantemos oculto porque você usa seu próprio componente
+      }}
+    >
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="mensagens" />
+      <Tabs.Screen name="perfil" />
+      <Tabs.Screen name="marketplace" />
+    </Tabs>
   );
 }
