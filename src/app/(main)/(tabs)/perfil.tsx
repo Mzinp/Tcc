@@ -6,6 +6,10 @@ import { supabase } from "@/lib/supabase";
 import * as ImagePicker from 'expo-image-picker'; 
 import { useAppTheme } from "@/context/ThemeContext";
 
+// @ts-ignore
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
+
 const { width } = Dimensions.get('window');
 
 export default function Perfil() {
@@ -31,6 +35,7 @@ export default function Perfil() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace("/login"); return; }
 
+      // 1. Tenta buscar os dados como MORADOR
       const { data: morador } = await supabase
         .from("tb_morador")
         .select("*")
@@ -39,10 +44,26 @@ export default function Perfil() {
 
       if (morador) {
         setNome(morador.Nome || morador.nome);
-        setInfoExtra(`Bloco ${morador.Bloco || ''} - Apto ${morador.Apartamento || morador.num_apartamento || ''}`);
+        setInfoExtra(`Bloco ${morador.bloco || '-'} - Apto ${morador.num_apartamento || morador.apartamento || '-'}`);
         setFotoUrl(morador.foto_url || null);
         setDadosCompletos({ ...morador, tipo: 'MORADOR' });
+        return; 
       }
+
+      // 2. Se não achou morador, tenta buscar como ADMINISTRADOR
+      const { data: admin } = await supabase
+        .from("tb_administrador")
+        .select("*")
+        .eq("id_administrador", user.id)
+        .maybeSingle();
+
+      if (admin) {
+        setNome(admin.Nome || admin.nome || "Administrador");
+        setInfoExtra("Administração do Condomínio"); 
+        setFotoUrl(admin.foto_url || null);
+        setDadosCompletos({ ...admin, tipo: 'ADMINISTRADOR' });
+      }
+
     } catch (error) {
       console.log("Erro ao buscar dados:", error);
     } finally {
@@ -54,42 +75,61 @@ export default function Perfil() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') return Alert.alert("Erro", "Permissão negada");
-
+  
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ['images'], 
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.5,
       });
-
+  
       if (result.canceled) return;
       setUploading(true);
-
+  
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
+  
       const uri = result.assets[0].uri;
       const fileName = `${user.id}-${Date.now()}.jpg`;
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
+  
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: 'base64' as any, 
+      });
+  
       const { error: uploadError } = await supabase.storage
-        .from('perfil')
-        .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
-
+        .from('perfil') 
+        .upload(fileName, decode(base64 as string), { 
+          contentType: 'image/jpeg', 
+          upsert: true 
+        });
+  
       if (uploadError) throw uploadError;
-
+  
       const { data: { publicUrl } } = supabase.storage.from('perfil').getPublicUrl(fileName);
-
-      await supabase
+  
+      const { data: morador } = await supabase
         .from("tb_morador")
-        .update({ foto_url: publicUrl })
-        .eq("id_morador", user.id);
-
+        .select("id_morador")
+        .eq("id_morador", user.id)
+        .maybeSingle();
+  
+      if (morador) {
+        await supabase
+          .from("tb_morador")
+          .update({ foto_url: publicUrl })
+          .eq("id_morador", user.id);
+      } else {
+        await supabase
+          .from("tb_administrador")
+          .update({ foto_url: publicUrl })
+          .eq("id_administrador", user.id); 
+      }
+  
       setFotoUrl(publicUrl);
       Alert.alert("Sucesso", "Foto atualizada!");
+      
     } catch (error) {
-      console.error(error);
+      console.error("Erro detalhado do upload:", error);
       Alert.alert("Erro", "Não foi possível salvar a imagem.");
     } finally {
       setUploading(false);

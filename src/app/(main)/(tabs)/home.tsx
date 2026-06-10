@@ -95,7 +95,7 @@ export default function Home() {
         // ---------------------------------------------------------
         
         // Simulação enquanto não liga no banco:
-        setUltimoAviso("Aviso da Administração: Reunião do condomínio nesta sexta-feira às 19h no Salão de Festas.");
+        setUltimoAviso("Não Há Avisos Disponíveis, Aguarde o Administrador do condomínio.");
       }
 
       setNomeUsuario(nomeFinal.split(" ")[0]); 

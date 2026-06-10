@@ -3,20 +3,18 @@ import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, Touchable
 import { useRouter } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
-import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
+import { useAppTheme } from "@/context/ThemeContext";
 
-// Seus componentes
 import ArrowBack from '@/components/ArrowVoltar';
 import InputField from "@/components/InputField";
 import PrimaryButton from "@/components/PrimaryButton";
 
 export default function CadastroComunicado() {
   const router = useRouter();
-  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
+  const { theme } = useAppTheme();
   
   const [loading, setLoading] = useState(false);
   
-  // Estados do formulário
   const [titulo, setTitulo] = useState("");
   const [conteudo, setConteudo] = useState("");
   const [tipo, setTipo] = useState<"Informativo" | "Urgente">("Informativo");
@@ -32,18 +30,25 @@ export default function CadastroComunicado() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Busca dados do admin para pegar o nome (autor) e condomínio
-      const { data: admin } = await supabase
+      // Busca dados do admin
+      const { data: admin, error: adminError } = await supabase
         .from('tb_administrador')
         .select('nome, id_condominio')
-        .eq('id_administrador', user.id)
+        .eq('id_administrador', user.id) // Confirme se o nome dessa coluna está correto no seu banco
         .single();
 
+      // TRAVA DE SEGURANÇA: Só publica se souber de qual condomínio ele é
+      if (adminError || !admin?.id_condominio) {
+        Alert.alert("Erro", "Não foi possível identificar o condomínio vinculado a este administrador.");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from('tb_comunicado').insert([{
-        id_condominio: admin?.id_condominio,
+        id_condominio: admin.id_condominio, // Agora temos certeza que não é nulo
         titulo: titulo,
         conteudo: conteudo,
-        autor: admin?.nome || "Administração",
+        autor: admin.nome || "Administração",
         tipo: tipo,
         data_publicacao: new Date().toISOString()
       }]);
@@ -94,7 +99,6 @@ export default function CadastroComunicado() {
             </TouchableOpacity>
           </View>
 
-          {/* Deixando o InputField gerenciar o tema internamente sem injeção de cor manual */}
           <InputField 
             label="TÍTULO DO AVISO"
             placeholder="Ex: Manutenção de Elevadores"

@@ -36,11 +36,11 @@ export default function MeusDados() {
             // Agora pegando os dados reais da tabela do Administrador
             setUserProfile({
               exibirNome: admin.nome || "Administrador",
-              exibirEmail: user.email,
+              exibirEmail: admin.email,
               exibirDoc: admin.cpf || "N/A", 
               exibirTel: admin.telefone || "N/A",
               exibirBloco: admin.bloco || "ADM",
-              exibirApto: admin.num_apartamento || "Sistema",
+              exibirApto: admin.apartamento || "Sistema",
               tipo: "Administrador"
             });
           } else {
@@ -55,11 +55,11 @@ export default function MeusDados() {
               // Pegando os dados reais da tabela do Morador
               setUserProfile({
                 exibirNome: morador.nome || "Morador",
-                exibirEmail: user.email, 
+                exibirEmail: morador.email, 
                 exibirDoc: morador.cpf || "N/A",
                 exibirTel: morador.telefone || "N/A",
                 exibirBloco: morador.bloco || "N/A",
-                exibirApto: morador.num_apartamento || "N/A",
+                exibirApto: morador.apartamento || "N/A",
                 tipo: "Morador Verificado"
               });
             }

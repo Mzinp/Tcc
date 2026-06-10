@@ -2,25 +2,24 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, usePathname } from "expo-router";
-import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook global do tema
+import { useAppTheme } from "@/context/ThemeContext";
 import { COLORS } from "@/consts/colors";
 
 export default function Navegacao() {
   const pathname = usePathname();
-  const { theme } = useAppTheme(); // Puxando o tema dinâmico e reativo do app
+  const { theme } = useAppTheme();
 
-  // Ajustado: Descomentamos o Chat e apontamos para a rota /mensagens
+  // === AGORA SIM: ROTAS EXATAS DA SUA FOTO ===
   const menuItems = [
     { name: "Início", icon: "home", route: "/home" },
     { name: "Mercado", icon: "cart", route: "/marketplace" },
-    { name: "Chat", icon: "chatbubbles", route: "/mensagens" }, 
-    { name: "Perfil", icon: "person", route: "/perfil" }, 
+    { name: "Chat", icon: "chatbubbles", route: "/chat" }, 
+    { name: "Perfil", icon: "person", route: "/perfil" }, // <-- Corrigido para /perfil
   ];
 
   return (
     <View style={[styles.navBar, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
       {menuItems.map((item) => {
-        // Verifica se a rota atual ativa o botão correspondente
         const isActive = pathname.includes(item.route);
         
         return (

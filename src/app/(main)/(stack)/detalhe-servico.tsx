@@ -4,30 +4,73 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import ArrowBack from "@/components/ArrowVoltar";
 import { useAppTheme } from "@/context/ThemeContext";
-// IMPORTANTE: Use a instância do supabase que já está configurada no seu projeto
 import { supabase } from "@/lib/supabase"; 
+
+// ==========================================
+// LISTA E FUNÇÃO DE FILTRO
+// ==========================================
+const palavrasProibidas = [
+  "safada", "safado", "gostosa", "gostoso", "linda", "lindo", "nudes", "nude",
+  "porra", "poha", "prra", "caralho", "crl", "crlh", "kralho", "carai", "caraio",
+  "foda", "fodase", "foder", "fdp", "fudido", "fudida",
+  "merda", "mrda", "bosta", 
+  "buceta", "bct", "xoxota", "xereca", "pepeca",
+  "cacete", "cct", "kct", 
+  "puta", "puto", "pqp", "putinha", "putaria",
+  "cu", "tnc", "vtnc", "tomarnocu", 
+  "arrombado", "arrombada",
+  "piranha", "vadia", "vagabunda", "vagabundo", "quenga", "kenga",
+  "corno", "corna", "chifrudo", 
+  "tesao", "pau", "rola", "piroca", "pinto", "benga", "caceta",
+  "gozar", "gozada", "esperma", "boquete", "punheta", "siririca",
+  "pelada", "pelado", "sexo", "transar", "suruba", "orgia",
+  "vsf", "tmnc", "pnc"
+];
+
+const contemPalavraProibida = (texto: string) => {
+  if (!texto) return false;
+  
+  // 1. Deixa tudo minúsculo e tira os acentos
+  const textoNormalizado = texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  // 2. Quebra a frase do usuário em uma lista de palavras (separando por espaços e pontuações)
+  const palavrasDigitadas = textoNormalizado.split(/[^a-z0-9]+/);
+
+  // 3. Verifica se alguma palavra que ele digitou existe na nossa lista de proibidas
+  return palavrasDigitadas.some((palavra) => palavrasProibidas.includes(palavra));
+};
+// ==========================================
 
 export default function DetalheServico() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { theme } = useAppTheme();
   
-  // Extrai o id do prestador dos params. Ajuste o nome da chave se o seu parâmetro for diferente.
-  const id_prestador = (params as any).id_prestador ?? (params as any).idPrestador ?? (params as any).id ?? "";
-  
+  // AQUI ESTÁ A CORREÇÃO ABSOLUTA: Pega unicamente o id_morador que foi passado!
+  const id_prestador = (params as any).id_morador; 
+
   const [modalVisible, setModalVisible] = useState(false);
   const [mensagem, setMensagem] = useState("");
 
+  const handleAbrirModal = () => {
+    // Se o Marketplace não enviar o ID do vizinho, ele barra aqui mesmo!
+    if (!id_prestador || id_prestador.length < 10) {
+      Alert.alert("Erro no Anúncio", "Não foi possível identificar o vizinho dono deste serviço. Volte e recarregue a lista.");
+      return;
+    }
+    setModalVisible(true);
+  };
+
   const handleEnviarSolicitacao = async () => {
-    // 1. Filtro de mensagens proibidas
-    const proibidas = ["safada", "gostosa", "linda", "nudes"];
-    if (proibidas.some(p => mensagem.toLowerCase().includes(p))) {
+    if (contemPalavraProibida(mensagem)) {
       Alert.alert("Atenção", "Mensagem imprópria. O Vizzo preza pelo respeito.");
       return;
     }
 
     try {
-      // 2. Pega a sessão do usuário logado
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
 
@@ -36,14 +79,25 @@ export default function DetalheServico() {
         return;
       }
 
-      // 3. Verifica se temos o ID do prestador antes de enviar
-      if (!id_prestador) {
-        Alert.alert("Erro", "ID do prestador não encontrado.");
+      // Agora sim, se o ID for seu, ele bloqueia!
+      if (user.id === id_prestador) {
+        Alert.alert("Atenção", "Você não pode enviar uma solicitação para o seu próprio anúncio!");
         return;
       }
 
-      // 4. Insere no banco
-      const { error } = await supabase
+      const { error: erroConversa } = await supabase
+        .from('tb_conversas')
+        .insert([
+          {
+            id_solicitante: user.id, 
+            id_prestador: id_prestador, // Agora vai o UUID correto do usuário!
+            status_conversa: 'pendente'
+          },
+        ]);
+
+      if (erroConversa) throw erroConversa;
+
+      const { error: erroMensagem } = await supabase
         .from('tb_mensagens')
         .insert([
           {
@@ -54,11 +108,12 @@ export default function DetalheServico() {
           },
         ]);
 
-      if (error) throw error;
-
-      // 5. Sucesso
+      if (erroMensagem) {
+        console.log("Erro ao salvar o texto:", erroMensagem);
+      }
+      
       setModalVisible(false);
-      setMensagem(""); // Limpa o campo após o envio
+      setMensagem(""); 
       router.push({
         pathname: "/(main)/(modal)/sucesso",
         params: { mensagem: "Solicitação enviada ao prestador!" }
@@ -84,7 +139,7 @@ export default function DetalheServico() {
       <View style={[styles.footer, { backgroundColor: theme.bg, borderTopColor: theme.border }]}>
         <TouchableOpacity 
           style={[styles.btnChat, { backgroundColor: theme.primary }]} 
-          onPress={() => setModalVisible(true)}
+          onPress={handleAbrirModal}
         >
           <Text style={styles.btnChatText}>SOLICITAR CONTATO</Text>
         </TouchableOpacity>
@@ -138,7 +193,7 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 20 },
   modalContent: { padding: 25, borderRadius: 20 },
   modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 15 },
-  modalInput: { borderWidth: 1, borderRadius: 12, padding: 15, height: 100, marginBottom: 15 },
+  modalInput: { borderWidth: 1, borderRadius: 12, padding: 15, height: 100, marginBottom: 15, textAlignVertical: 'top' }, 
   modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
   btnCancel: { padding: 15 },
   btnConfirm: { padding: 15, borderRadius: 12, paddingHorizontal: 30 }

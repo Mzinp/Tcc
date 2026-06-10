@@ -20,26 +20,46 @@ export default function Marketplace() {
       if (!user) return;
       setMeuId(user.id);
 
-      // Adicionado certificado_url na busca
-      const { data } = await supabase.from("tb_servico").select(`
+      const { data: moradorData, error: moradorError } = await supabase
+        .from('tb_morador')
+        .select('id_condominio')
+        .eq('id_morador', user.id) 
+        .single();
+
+      if (moradorError || !moradorData?.id_condominio) {
+        console.log("Condomínio não encontrado para este usuário.");
+        setServicos([]);
+        return;
+      }
+
+      // 2. Busca OS SERVIÇOS APENAS DESTE CONDOMÍNIO
+      const { data } = await supabase
+        .from("tb_servico")
+        .select(`
           id_servico, nome_servico, valor_estimado, descricao_servico, id_morador, certificado_url,
-          tb_morador ( nome, num_apartamento, telefone )
-        `);
+          tb_morador ( nome, apartamento, telefone )
+        `)
+        .eq('id_condominio', moradorData.id_condominio); // <-- FILTRO DE ISOLAMENTO AQUI
 
       if (data) {
         const formatados = data.map((s: any) => ({
           id: s.id_servico?.toString() || Math.random().toString(),
           nome: s.nome_servico,
-          prestador: s.tb_morador ? `${s.tb_morador.nome.split(" ")[0]} (Apto ${s.tb_morador.num_apartamento})` : "Vizinho",
+          prestador: s.tb_morador ? `${s.tb_morador.nome.split(" ")[0]} (Apto ${s.tb_morador.apartamento})` : "Vizinho",
           preco: `R$ ${s.valor_estimado}`,
           id_morador: s.id_morador,
           descricao: s.descricao_servico,
           telefone: s.tb_morador?.telefone,
-          certificado_url: s.certificado_url // Passando o campo para verificar o selo
+          // Como é opcional, se for null o React Native ignora e não mostra o selo
+          certificado_url: s.certificado_url 
         }));
         setServicos(formatados);
       }
-    } catch (e) { console.log(e); } finally { setLoading(false); }
+    } catch (e) { 
+      console.log(e); 
+    } finally { 
+      setLoading(false); 
+    }
   }
 
   useFocusEffect(useCallback(() => { carregarServicos(); }, []));
@@ -73,7 +93,7 @@ export default function Marketplace() {
               <View style={styles.info}>
                 <Text style={[styles.serviceName, { color: theme.text }]}>{item.nome}</Text>
                 
-                {/* Exibição do Selo de Licenciamento */}
+                {/* Exibição do Selo de Licenciamento (OPCIONAL) */}
                 {item.certificado_url && (
                   <View style={styles.badge}>
                     <Ionicons name="shield-checkmark" size={12} color="#28B446" />
@@ -111,6 +131,6 @@ const styles = StyleSheet.create({
   price: { fontWeight: '800', marginTop: 5 },
   hireBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 12 },
   fab: { position: 'absolute', bottom: 35, right: 25, width: 65, height: 65, borderRadius: 22, justifyContent: 'center', alignItems: 'center', elevation: 8 },
-  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e8f5e9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start', marginTop: 4 },
+  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e8f5e9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start', marginTop: 4, marginBottom: 4 },
   badgeText: { fontSize: 9, fontWeight: 'bold', color: '#28B446', marginLeft: 3 }
 });

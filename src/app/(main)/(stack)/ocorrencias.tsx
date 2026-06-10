@@ -32,7 +32,7 @@ export default function Ocorrencias() {
       // 2. Busca ocorrências com join na tabela de morador para exibir o nome
       let query = supabase.from('tb_ocorrencias').select(`
         *,
-        tb_morador(nome, num_apartamento)
+        tb_morador(nome, apartamento)
       `);
 
       if (admin) {

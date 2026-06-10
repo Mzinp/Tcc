@@ -40,22 +40,37 @@ export default function NovoServico() {
 
   async function handleSalvarServico() {
     if (!form.titulo || !form.preco || !form.descricao) {
-      Alert.alert("Atenção", "Preencha todos os campos.");
+      Alert.alert("Atenção", "Preencha todos os campos obrigatórios.");
       return;
     }
 
-    if (['1', '2', '4'].includes(categoriaSel) && !certificadoNome) {
-      Alert.alert("Atenção", "Esta categoria exige o anexo de um comprovante técnico em PDF.");
-      return;
-    }
+    // REMOVIDO: A validação que obrigava o envio do PDF foi apagada.
 
     try {
       setLoading(true);
+      
+      // 1. Pega o usuário logado no Auth
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // 2. Busca o ID do Condomínio do usuário logado
+      // IMPORTANTE: Mude 'tb_usuarios' para o nome da sua tabela de moradores
+      const { data: perfilData, error: perfilError } = await supabase
+        .from('tb_morador') 
+        .select('id_condominio')
+        .eq('id_morador', user.id) // Ajuste se a sua coluna de ligação com o auth não se chamar 'id'
+        .single();
+
+      if (perfilError || !perfilData?.id_condominio) {
+        Alert.alert("Erro", "Não foi possível identificar o seu condomínio.");
+        setLoading(false);
+        return;
+      }
+
+      // 3. Insere o serviço já com o id_condominio vinculado
       const { error } = await supabase.from("tb_servico").insert([{
         id_morador: user.id,
+        id_condominio: perfilData.id_condominio, // VINCULAÇÃO ACONTECENDO AQUI
         nome_servico: form.titulo,
         valor_estimado: parseFloat(form.preco.replace(",", ".")) || 0,
         descricao_servico: form.descricao,
@@ -65,8 +80,10 @@ export default function NovoServico() {
       }]);
 
       if (error) throw error;
-      router.push({ pathname: "/(main)/(modal)/sucesso", params: { mensagem: "Anúncio em moderação!" } });
+      router.push({ pathname: "/(main)/(modal)/sucesso", params: { mensagem: "Anúncio criado com sucesso!" } });
+      
     } catch (e) {
+      console.error(e);
       Alert.alert("Erro", "Falha ao salvar anúncio.");
     } finally {
       setLoading(false);
@@ -96,12 +113,12 @@ export default function NovoServico() {
 
         <TouchableOpacity style={[styles.fileButton, { borderColor: theme.subText }]} onPress={handleSelecionarArquivo}>
           <Text style={{ color: certificadoNome ? "#28B446" : theme.text }}>
-            {certificadoNome ? `📄 ${certificadoNome}` : "📎 Anexar Certificado (PDF)"}
+            {certificadoNome ? `📄 ${certificadoNome}` : "📎 Anexar Certificado Opcional (PDF)"}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.mainButton, { backgroundColor: theme.primary }]} onPress={handleSalvarServico}>
-          {loading ? <ActivityIndicator color="white" /> : <Text style={{ color: 'white', fontWeight: 'bold' }}>SOLICITAR ATIVAÇÃO</Text>}
+          {loading ? <ActivityIndicator color="white" /> : <Text style={{ color: 'white', fontWeight: 'bold' }}>PUBLICAR SERVIÇO</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -115,7 +132,7 @@ const styles = StyleSheet.create({
   content: { padding: 25 },
   label: { fontSize: 10, fontWeight: 'bold', marginBottom: 10 },
   input: { borderRadius: 15, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: '#ccc' },
-  textArea: { height: 120 },
+  textArea: { height: 120, textAlignVertical: 'top' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   catItem: { padding: 12, borderRadius: 12, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
   fileButton: { padding: 16, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', marginBottom: 20 },

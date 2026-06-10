@@ -56,18 +56,18 @@ export default function Moradores() {
 
       const { data: admins } = await supabase
         .from("tb_administrador")
-        .select("id_administrador, nome, num_apartamento, bloco")
+        .select("id_administrador, nome,  apartamento, bloco")
         .eq("id_condominio", idCondominioUsuario);
 
       const { data: moradores } = await supabase
         .from("tb_morador")
-        .select("id_morador, nome, num_apartamento, bloco")
+        .select("id_morador, nome, apartamento, bloco")
         .eq("id_condominio", idCondominioUsuario);
 
       const listaAdmins = (admins || []).map((a) => ({
         id: a.id_administrador,
         nome: a.nome || "Administrador",
-        apto: a.num_apartamento || "N/A",
+        apto: a.apartamento || "N/A",
         bloco: a.bloco || "N/A",
         isAdmin: true,
       }));
@@ -75,7 +75,7 @@ export default function Moradores() {
       const listaMoradoresNormal = (moradores || []).map((m) => ({
         id: m.id_morador,
         nome: m.nome || "Morador",
-        apto: m.num_apartamento || "N/A",
+        apto: m.apartamento || "N/A",
         bloco: m.bloco || "N/A",
         isAdmin: false,
       }));
