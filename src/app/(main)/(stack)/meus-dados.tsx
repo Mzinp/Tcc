@@ -11,10 +11,29 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import ArrowBack from '@/components/ArrowVoltar';
-import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
+import { useAppTheme } from "@/context/ThemeContext";
+
+// === MÁSCARAS DE FORMATAÇÃO VISUAL ===
+const maskCPF = (value: string) => {
+  if (!value) return "N/A";
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+    .replace(/(-\d{2})\d+?$/, "$1");
+};
+
+const maskPhone = (value: string) => {
+  if (!value) return "N/A";
+  let v = value.replace(/\D/g, "");
+  v = v.replace(/^(\d{2})(\d)/g, "($1) $2"); 
+  v = v.replace(/(\d)(\d{4})$/, "$1-$2"); 
+  return v.substring(0, 15); 
+};
 
 export default function MeusDados() {
-  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
+  const { theme } = useAppTheme();
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
 
@@ -25,7 +44,7 @@ export default function MeusDados() {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-          // 1. Tenta buscar na tabela de Administrador (conforme seu SQL)
+          // 1. Tenta buscar na tabela de Administrador
           const { data: admin } = await supabase
             .from("tb_administrador")
             .select("*")
@@ -33,18 +52,17 @@ export default function MeusDados() {
             .maybeSingle();
 
           if (admin) {
-            // Agora pegando os dados reais da tabela do Administrador
             setUserProfile({
               exibirNome: admin.nome || "Administrador",
               exibirEmail: admin.email,
-              exibirDoc: admin.cpf || "N/A", 
-              exibirTel: admin.telefone || "N/A",
+              exibirDoc: maskCPF(admin.cpf), // Máscara Aplicada!
+              exibirTel: maskPhone(admin.telefone), // Máscara Aplicada!
               exibirBloco: admin.bloco || "ADM",
               exibirApto: admin.apartamento || "Sistema",
               tipo: "Administrador"
             });
           } else {
-            // 2. Tenta buscar na tabela de Morador
+            // 2. Tenta buscar na tabela de Morador se não for admin
             const { data: morador } = await supabase
               .from("tb_morador")
               .select("*")
@@ -52,12 +70,11 @@ export default function MeusDados() {
               .maybeSingle();
 
             if (morador) {
-              // Pegando os dados reais da tabela do Morador
               setUserProfile({
                 exibirNome: morador.nome || "Morador",
-                exibirEmail: morador.email, 
-                exibirDoc: morador.cpf || "N/A",
-                exibirTel: morador.telefone || "N/A",
+                exibirEmail: morador.email || "N/A",
+                exibirDoc: maskCPF(morador.cpf), // Máscara Aplicada!
+                exibirTel: maskPhone(morador.telefone), // Máscara Aplicada!
                 exibirBloco: morador.bloco || "N/A",
                 exibirApto: morador.apartamento || "N/A",
                 tipo: "Morador Verificado"
