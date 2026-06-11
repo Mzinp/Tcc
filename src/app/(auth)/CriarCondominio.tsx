@@ -14,6 +14,24 @@ import {
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
+// === MÁSCARAS ===
+const maskCNPJ = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2")
+    .replace(/(-\d{2})\d+?$/, "$1");
+};
+
+const maskCEP = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{5})(\d)/, "$1-$2")
+    .replace(/(-\d{3})\d+?$/, "$1");
+};
+
 export default function CriarCondominio() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -30,8 +48,12 @@ export default function CriarCondominio() {
   const [estado, setEstado] = useState("");
 
   async function buscarCep(valor: string) {
-    const cepLimpo = valor.replace(/\D/g, "");
-    setCep(cepLimpo);
+    // 1. Aplica a máscara e salva no state (para aparecer na tela com o traço)
+    const cepMascarado = maskCEP(valor);
+    setCep(cepMascarado);
+
+    // 2. Limpa a pontuação só para checar o tamanho e buscar na API
+    const cepLimpo = cepMascarado.replace(/\D/g, "");
 
     if (cepLimpo.length === 8) {
       try {
@@ -62,7 +84,6 @@ export default function CriarCondominio() {
     setLoading(true);
 
     try {
-      // 1. Pegar o ID do usuário logado
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
@@ -71,14 +92,13 @@ export default function CriarCondominio() {
         return;
       }
 
-      // 2. Criar o condomínio e OBTER os dados gerados pelo banco
       const { data: condoData, error: condoError } = await supabase
         .from("tb_condominio")
         .insert([
           {
             nome_condominio: nome,
-            cnpj: cnpj.replace(/\D/g, ""), // Limpa o CNPJ antes de salvar
-            cep: cep.replace(/\D/g, ""),
+            cnpj: cnpj.replace(/\D/g, ""), // Salva limpo no banco
+            cep: cep.replace(/\D/g, ""),   // Salva limpo no banco
             logradouro,
             numero,
             complemento,
@@ -87,14 +107,13 @@ export default function CriarCondominio() {
             estado,
           },
         ])
-        .select() // ESSENCIAL: Faz o Supabase retornar o código gerado
+        .select() 
         .single();
 
       if (condoError) {
         throw new Error(condoError.message);
       }
 
-      // 3. VÍNCULO: Atualizar o administrador com o novo UUID do condomínio
       if (condoData) {
         const { error: updateError } = await supabase
           .from("tb_administrador")
@@ -103,10 +122,8 @@ export default function CriarCondominio() {
 
         if (updateError) {
           console.error("Erro ao vincular:", updateError.message);
-          // Mesmo com erro no vínculo, o condomínio foi criado, então seguimos.
         }
 
-        // 4. Sucesso! Navega passando o código REAL retornado pelo banco
         router.replace({
           pathname: "/(main)/(modal)/sucesso",
           params: { 
@@ -115,7 +132,6 @@ export default function CriarCondominio() {
           }
         });
         
-        // Desloga por segurança para forçar o login com o novo vínculo
         await supabase.auth.signOut();
       }
 
@@ -151,7 +167,9 @@ export default function CriarCondominio() {
           <TextInput
             style={styles.input}
             value={cnpj}
-            onChangeText={setCnpj}
+            // MÁSCARA DO CNPJ APLICADA
+            onChangeText={(texto) => setCnpj(maskCNPJ(texto))}
+            maxLength={18}
             placeholder="00.000.000/0001-00"
             keyboardType="numeric"
             placeholderTextColor="#666"
@@ -166,7 +184,7 @@ export default function CriarCondominio() {
                 onChangeText={buscarCep}
                 placeholder="00000-000"
                 keyboardType="numeric"
-                maxLength={8}
+                maxLength={9} // 8 números + 1 traço
                 placeholderTextColor="#666"
               />
             </View>
@@ -237,7 +255,7 @@ export default function CriarCondominio() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 30, paddingTop: 60 },
+  container: { padding: 30, paddingTop: 60, paddingBottom: 60 },
   title: { color: "#fff", fontSize: 26, fontWeight: "800", marginBottom: 5 },
   subtitle: { color: "#2d79f3", fontSize: 14, marginBottom: 30 },
   form: { gap: 5 },

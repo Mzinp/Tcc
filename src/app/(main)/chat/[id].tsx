@@ -1,9 +1,39 @@
 import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Image } from "react-native";
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/lib/supabase";
 import { useAppTheme } from "@/context/ThemeContext";
+
+const palavrasProibidas = [
+  "safada", "safado", "gostosa", "gostoso", "linda", "lindo", "nudes", "nude",
+  "porra", "poha", "prra", "caralho", "crl", "crlh", "kralho", "carai", "caraio",
+  "foda", "fodase", "foder", "fdp", "fudido", "fudida",
+  "merda", "mrda", "bosta", 
+  "buceta", "bct", "xoxota", "xereca", "pepeca",
+  "cacete", "cct", "kct", 
+  "puta", "puto", "pqp", "putinha", "putaria",
+  "cu", "tnc", "vtnc", "tomarnocu", 
+  "arrombado", "arrombada",
+  "piranha", "vadia", "vagabunda", "vagabundo", "quenga", "kenga",
+  "corno", "corna", "chifrudo", 
+  "tesao", "pau", "rola", "piroca", "pinto", "benga", "caceta",
+  "gozar", "gozada", "esperma", "boquete", "punheta", "siririca",
+  "pelada", "pelado", "sexo", "transar", "suruba", "orgia",
+  "vsf", "tmnc", "pnc"
+];
+
+const contemPalavraProibida = (texto: string) => {
+  if (!texto) return false;
+  
+  const textoNormalizado = texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const palavrasDigitadas = textoNormalizado.split(/[^a-z0-9]+/);
+  return palavrasDigitadas.some((palavra) => palavrasProibidas.includes(palavra));
+};
 
 export default function TelaChat() {
   const { id } = useLocalSearchParams(); // Pega o id_conversa da rota
@@ -94,6 +124,12 @@ export default function TelaChat() {
 
   const handleEnviarMensagem = async () => {
     if (!novoTexto.trim() || !meuId) return;
+
+    // === TRAVA DE SEGURANÇA (FILTRO DE PALAVRAS) ===
+    if (contemPalavraProibida(novoTexto)) {
+      Alert.alert("Atenção", "Mensagem imprópria. O Vizzo preza pelo respeito entre os vizinhos.");
+      return; // Barra a função aqui mesmo, não limpa a tela e não envia para o banco
+    }
 
     try {
       const textoEnviar = novoTexto.trim();

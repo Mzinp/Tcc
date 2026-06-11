@@ -13,7 +13,24 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
-import { Ionicons } from "@expo/vector-icons"; // Importação do ícone para o Checkbox
+import { Ionicons } from "@expo/vector-icons"; 
+
+// As funções de máscara ficam melhor aqui fora para não recriarem toda hora
+const maskCPF = (value: string) => {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+    .replace(/(-\d{2})\d+?$/, "$1");
+};
+
+const maskPhone = (value: string) => {
+  let v = value.replace(/\D/g, "");
+  v = v.replace(/^(\d{2})(\d)/g, "($1) $2"); 
+  v = v.replace(/(\d)(\d{4})$/, "$1-$2"); 
+  return v.substring(0, 15); 
+};
 
 export default function CadastroAdmin() {
   const router = useRouter();
@@ -27,49 +44,11 @@ export default function CadastroAdmin() {
   const [cargo, setCargo] = useState("");
   const [senha, setSenha] = useState("");
   
-  // NOVO: Estado para controlar a aceitação dos termos (LGPD)
+  // Estado para controlar a aceitação dos termos (LGPD)
   const [aceitouTermos, setAceitouTermos] = useState(false);
 
-  // Função para CPF: 000.000.000-00
-const maskCPF = (value: string) => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
-    .replace(/(-\d{2})\d+?$/, "$1");
-};
-
-// Função para Telefone: (00) 00000-0000
-const maskPhone = (value: string) => {
-  return value
-    .replace(/\D/g, "")
-    .replace(/(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2")
-    .replace(/(-\d{4})\d+?$/, "$1");
-};
-
-// Função para CNPJ: 00.000.000/0000-00
-const maskCNPJ = (value: string) => {
-  return value
-    .replace(/\D/g, "") // Remove tudo que não é número
-    .replace(/^(\d{2})(\d)/, "$1.$2") // Coloca ponto após os 2 primeiros números
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3") // Coloca ponto após os 5 primeiros
-    .replace(/\.(\d{3})(\d)/, ".$1/$2") // Coloca a barra após os 8 primeiros
-    .replace(/(\d{4})(\d)/, "$1-$2") // Coloca o hífen após os 12 primeiros
-    .replace(/(-\d{2})\d+?$/, "$1"); // Limita em 14 números (formatados)
-};
-
-// No seu TextInput de CPF, use assim:
-<TextInput
-  value={cpf}
-  onChangeText={(text) => setCpf(maskCPF(text))}
-  maxLength={14}
-  keyboardType="numeric"
-/>
-
   async function handleCadastro() {
-    // NOVA TRAVA: Verificação da LGPD antes de qualquer coisa
+    // TRAVA: Verificação da LGPD antes de qualquer coisa
     if (!aceitouTermos) {
       Alert.alert(
         "Termos Obrigatórios", 
@@ -78,7 +57,7 @@ const maskCNPJ = (value: string) => {
       return;
     }
 
-    // 1. Validação de campos vazios
+    // Validação de campos vazios
     if (!nome || !email || !cpf || !cargo || !senha) {
       Alert.alert(
         "Atenção",
@@ -90,15 +69,14 @@ const maskCNPJ = (value: string) => {
     setLoading(true);
 
     try {
-      // 2. Criar o login no Supabase Auth
+      // Criar o login no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password: senha,
       });
 
-      // Se der erro no Auth (ex: e-mail já cadastrado)
       if (authError) {
-        setLoading(false); // Libera o botão
+        setLoading(false);
         if (authError.message.includes("already registered")) {
           Alert.alert(
             "Conta Existente",
@@ -110,7 +88,7 @@ const maskCNPJ = (value: string) => {
         return;
       }
 
-      // 3. Salvar os dados na tabela tb_administrador
+      // Salvar os dados na tabela tb_administrador
       if (authData?.user) {
         const { error: dbError } = await supabase
           .from("tb_administrador")
@@ -119,15 +97,15 @@ const maskCNPJ = (value: string) => {
               id_administrador: authData.user.id,
               nome: nome,
               email: email.trim(),
-              cpf: cpf.replace(/\D/g, ""),
-              telefone: telefone,
+              cpf: cpf.replace(/\D/g, ""), // Salva no banco só os números limpos
+              telefone: telefone.replace(/\D/g, ""), // Salva no banco só os números limpos
               cargo: cargo,
-              id_condominio: null, // Será preenchido na tela de Criar Condomínio
+              id_condominio: null, 
             },
           ]);
 
         if (dbError) {
-          setLoading(false); // Libera o botão
+          setLoading(false);
           console.error("Erro DB:", dbError);
           Alert.alert(
             "Erro ao salvar",
@@ -136,13 +114,8 @@ const maskCNPJ = (value: string) => {
           return;
         }
 
-        // 4. Limpar a sessão e Redirecionar
-        // Fazemos logOut porque o signUp loga automaticamente, mas queremos que ela faça login manual.
         await supabase.auth.signOut();
-
-        setLoading(false); // Sucesso!
-
-        // Redireciona direto para o Login
+        setLoading(false); 
         router.replace("/(auth)/login");
       }
     } catch (error) {
@@ -179,7 +152,9 @@ const maskCNPJ = (value: string) => {
             placeholder="000.000.000-00"
             placeholderTextColor="#666"
             value={cpf}
-            onChangeText={setCpf}
+            // MÁSCARA APLICADA AQUI E MAXLENGTH ADICIONADO
+            onChangeText={(texto) => setCpf(maskCPF(texto))}
+            maxLength={14}
             keyboardType="numeric"
           />
 
@@ -208,7 +183,9 @@ const maskCNPJ = (value: string) => {
             placeholder="(11) 99999-9999"
             placeholderTextColor="#666"
             value={telefone}
-            onChangeText={setTelefone}
+            // MÁSCARA APLICADA AQUI E MAXLENGTH ADICIONADO
+            onChangeText={(texto) => setTelefone(maskPhone(texto))}
+            maxLength={15}
             keyboardType="phone-pad"
           />
 
@@ -222,7 +199,7 @@ const maskCNPJ = (value: string) => {
             secureTextEntry
           />
 
-          {/* NOVO: CHECKBOX DE TERMOS E CONDIÇÕES (LGPD) */}
+          {/* CHECKBOX DE TERMOS E CONDIÇÕES (LGPD) */}
           <TouchableOpacity 
             style={styles.checkboxContainer} 
             onPress={() => setAceitouTermos(!aceitouTermos)}
@@ -239,7 +216,7 @@ const maskCNPJ = (value: string) => {
           <TouchableOpacity
             style={[styles.button, (!aceitouTermos || loading) && { opacity: 0.5 }]}
             onPress={handleCadastro}
-            disabled={loading} // Continua apenas bloqueando o loading para o Alerta de Termos funcionar
+            disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -257,45 +234,15 @@ const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: "#0f1111" },
   container: { padding: 30, paddingTop: 60, paddingBottom: 60 },
   title: { color: "#fff", fontSize: 28, fontWeight: "800" },
-  subtitle: {
-    color: "#2d79f3",
-    fontSize: 14,
-    marginBottom: 30,
-    fontWeight: "500",
-  },
+  subtitle: { color: "#2d79f3", fontSize: 14, marginBottom: 30, fontWeight: "500" },
   form: { gap: 5 },
-  label: {
-    color: "#8b8e98",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-    marginBottom: 5,
-  },
-  input: {
-    backgroundColor: "#1a1d1d",
-    borderWidth: 1,
-    borderColor: "#353838",
-    borderRadius: 12,
-    height: 55,
-    paddingHorizontal: 15,
-    color: "#fff",
-    marginBottom: 15,
-  },
-  
-  /* ESTILOS NOVOS DO CHECKBOX */
+  label: { color: "#8b8e98", fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 5 },
+  input: { backgroundColor: "#1a1d1d", borderWidth: 1, borderColor: "#353838", borderRadius: 12, height: 55, paddingHorizontal: 15, color: "#fff", marginBottom: 15 },
   checkboxContainer: { flexDirection: "row", alignItems: "center", marginTop: 5, marginBottom: 15, paddingRight: 20 },
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#353838", backgroundColor: "#1a1d1d", justifyContent: "center", alignItems: "center", marginRight: 12 },
   checkboxAtivo: { backgroundColor: "#2d79f3", borderColor: "#2d79f3" },
   checkboxText: { color: "#8b8e98", fontSize: 12, lineHeight: 18, flex: 1 },
   linkText: { color: "#2d79f3", fontWeight: "bold" },
-  
-  button: {
-    backgroundColor: "#2d79f3",
-    height: 60,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-  },
+  button: { backgroundColor: "#2d79f3", height: 60, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 10 },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });
