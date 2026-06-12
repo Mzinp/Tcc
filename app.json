@@ -4,7 +4,7 @@
     "slug": "Vizzo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./src/assets/img/logo.png",
     "scheme": "vizzo",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -18,16 +18,15 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./src/assets/img/logo.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.isaarg96.Vizzo"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./src/assets/img/logo.png"
     },
     "plugins": [
       "expo-router",
@@ -36,6 +35,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "df697c6e-0a3e-4ac6-bd9d-8ad7d7f99a96"
+      }
     }
   }
 }

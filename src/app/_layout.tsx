@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
 import { ThemeProvider } from "@/context/ThemeContext"; // Ajustado com @/ para evitar erros de pasta
+import { Stack } from "expo-router";
 
 export default function RootLayout() {
   return (
