@@ -12,9 +12,9 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons"; 
-import { FormularioSelecaoNative } from "@components/input/autoCompletar";
+import { FormularioSelecaoNative } from "@/components/input/autoCompletar";
 
 // Funções de máscara isoladas fora do componente para melhor performance
 const maskCPF = (value: string) => {

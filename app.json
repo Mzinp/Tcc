@@ -39,8 +39,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "df697c6e-0a3e-4ac6-bd9d-8ad7d7f99a96"
+        "projectId": "451e7379-c361-4997-b89b-43cac4bd70d3"
       }
-    }
+    },
+    "owner": "mateus-teste"
   }
 }

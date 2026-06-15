@@ -11,10 +11,10 @@ export default function Navegacao() {
 
   // === AGORA SIM: ROTAS EXATAS DA SUA FOTO ===
   const menuItems = [
-    { name: "Início", icon: "home", route: "/home" },
-    { name: "Mercado", icon: "cart", route: "/marketplace" },
-    { name: "Chat", icon: "chatbubbles", route: "/chat" }, 
-    { name: "Perfil", icon: "person", route: "/perfil" }, // <-- Corrigido para /perfil
+    { name: "Início", icon: "home", route: "/(main)/(tabs)/home" },
+    { name: "Mercado", icon: "cart", route: "/(main)/(tabs)/marketplace" },
+    { name: "Chat", icon: "chatbubbles", route: "/(main)/chat" }, 
+    { name: "Perfil", icon: "person", route: "/(main)/(tabs)/perfil" },
   ];
 
   return (

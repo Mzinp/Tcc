@@ -11,7 +11,7 @@ import {
   KeyboardTypeOptions,
 } from "react-native";
 
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 interface FormularioProps {
   value: string;

@@ -33,7 +33,7 @@ export default function Perfil() {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace("/login"); return; }
+      if (!user) { router.replace("/(auth)/login"); return; }
 
       // 1. Tenta buscar os dados como MORADOR
       const { data: morador } = await supabase
@@ -138,7 +138,7 @@ export default function Perfil() {
 
   const verMeusDados = () => { router.push({ pathname: "/(main)/(stack)/meus-dados", params: { cache: 'true' } }); };
   const handleSuporteEmail = () => { Linking.openURL(`mailto:SuporteVizzoEquipeAllSet@gmail.com?subject=Suporte App Vizzo`); };
-  const handleLogout = async () => { await supabase.auth.signOut(); router.replace("/login"); };
+  const handleLogout = async () => { await supabase.auth.signOut(); router.replace("/(auth)/login"); };
 
   const uriFotoFinal = fotoUrl ? fotoUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(nome)}&background=2d79f3&color=fff`;
 

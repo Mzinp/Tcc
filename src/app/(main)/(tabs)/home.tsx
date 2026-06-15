@@ -34,7 +34,7 @@ export default function Home() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.replace("/login");
+        router.replace("/(auth)/login");
         return;
       }
 
@@ -50,7 +50,7 @@ export default function Home() {
 
       if (adminData) {
         if (!adminData.id_condominio) {
-          router.replace("/CriarCondominio");
+          router.replace("/(auth)/CriarCondominio");
           return;
         }
 
@@ -158,7 +158,7 @@ export default function Home() {
               onPress={async () => {
                 setMenuVisible(false);
                 await supabase.auth.signOut();
-                router.replace("/login");
+                router.replace("/(auth)/login");
               }}
             >
               <Ionicons name="log-out-outline" size={20} color={COLORS.red} />

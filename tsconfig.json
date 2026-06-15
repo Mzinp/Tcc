@@ -5,18 +5,6 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ],
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@consts/*": [
-        "./src/consts/*"
-      ],
-      "@lib/*": [
-        "./src/lib/*"
-      ],
-      "@app/*": [
-        "./src/app/*"
       ]
     }
   },

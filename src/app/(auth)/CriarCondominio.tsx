@@ -12,7 +12,7 @@ import {
   View,
   ActivityIndicator
 } from "react-native";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 // === MÁSCARAS ===
 const maskCNPJ = (value: string) => {

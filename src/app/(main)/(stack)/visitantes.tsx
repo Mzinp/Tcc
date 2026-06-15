@@ -155,8 +155,7 @@ export default function Visitantes() {
             setCpf("");
             setDataObjeto(new Date());
             buscarHistorico();
-            // Descomente a linha abaixo quando a tela de sucesso estiver criada!
-            // router.push("/(main)/(modal)/sucesso");
+            router.push({ pathname: "/(main)/(modal)/sucesso", params: { mensagem: "Visitante registrado com sucesso!" } });
         }}]
       );
 

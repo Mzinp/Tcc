@@ -12,7 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { useRouter } from "expo-router"; 
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import ArrowBack from '@/components/ArrowVoltar'; 
 
