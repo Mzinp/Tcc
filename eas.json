@@ -1,0 +1,13 @@
+{
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://aaptsjafybombppcxguh.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhcHRzamFmeWJvbWJwcGN4Z3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NTUyOTIsImV4cCI6MjA5MjUzMTI5Mn0.OpJSiMWd9917gDbcy7ZeiVz9gd-u2GchfJHiUFScO_s"
+      }
+    }
+  }
+}
