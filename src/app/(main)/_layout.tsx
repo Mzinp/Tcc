@@ -1,20 +1,22 @@
-import { Tabs } from "expo-router";
+import Navegacao from "@/components/Navegacao";
 import { useAppTheme } from "@/context/ThemeContext";
+import { Slot, usePathname } from "expo-router";
+import { View } from "react-native";
 
-export default function TabsLayout() {
+export default function MainLayout() {
   const { theme } = useAppTheme();
+  const pathname = usePathname();
+
+  // Vamos garantir que qualquer rota contendo 'login', 'Cadastro' ou 'CriarCondominio' oculte a barra
+  const ocultarNavegacao = 
+    pathname.toLowerCase().includes("cadastro") || 
+    pathname.toLowerCase().includes("login") || 
+    pathname.toLowerCase().includes("criarcondominio");
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: { display: 'none' }, // Mantemos oculto porque você usa seu próprio componente
-      }}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="mensagens" />
-      <Tabs.Screen name="perfil" />
-      <Tabs.Screen name="marketplace" />
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <Slot />
+      {!ocultarNavegacao && <Navegacao title="VIZZO" />}
+    </View>
   );
 }

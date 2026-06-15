@@ -44,7 +44,6 @@ export default function MeusDados() {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-          // 1. Tenta buscar na tabela de Administrador
           const { data: admin } = await supabase
             .from("tb_administrador")
             .select("*")
@@ -55,14 +54,13 @@ export default function MeusDados() {
             setUserProfile({
               exibirNome: admin.nome || "Administrador",
               exibirEmail: admin.email,
-              exibirDoc: maskCPF(admin.cpf), // Máscara Aplicada!
-              exibirTel: maskPhone(admin.telefone), // Máscara Aplicada!
+              exibirDoc: maskCPF(admin.cpf),
+              exibirTel: maskPhone(admin.telefone),
               exibirBloco: admin.bloco || "ADM",
               exibirApto: admin.apartamento || "Sistema",
               tipo: "Administrador"
             });
           } else {
-            // 2. Tenta buscar na tabela de Morador se não for admin
             const { data: morador } = await supabase
               .from("tb_morador")
               .select("*")
@@ -73,8 +71,8 @@ export default function MeusDados() {
               setUserProfile({
                 exibirNome: morador.nome || "Morador",
                 exibirEmail: morador.email || "N/A",
-                exibirDoc: maskCPF(morador.cpf), // Máscara Aplicada!
-                exibirTel: maskPhone(morador.telefone), // Máscara Aplicada!
+                exibirDoc: maskCPF(morador.cpf),
+                exibirTel: maskPhone(morador.telefone),
                 exibirBloco: morador.bloco || "N/A",
                 exibirApto: morador.apartamento || "N/A",
                 tipo: "Morador Verificado"
@@ -88,7 +86,6 @@ export default function MeusDados() {
         setLoading(false);
       }
     }
-
     fetchUserProfile();
   }, []);
 
@@ -109,17 +106,22 @@ export default function MeusDados() {
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>
-        <ArrowBack cor={theme.text} />
+        <View style={styles.arrowContainer}>
+          <ArrowBack cor={theme.text} />
+        </View>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Meus Dados</Text>
       </View>
 
       {loading ? (
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={theme.primary} />
-          <Text style={{ color: theme.subText, marginTop: 15 }}>Sincronizando com banco...</Text>
+          <Text style={{ color: theme.subText, marginTop: 15 }}>Sincronizando...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={styles.content} 
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.profileSection}>
             <View style={[styles.avatarCircle, { backgroundColor: theme.card }]}>
               <Ionicons name="person" size={50} color={theme.primary} />
@@ -144,7 +146,7 @@ export default function MeusDados() {
           </View>
 
           <TouchableOpacity 
-            style={[styles.editBtn, { borderColor: theme.border }]}
+            style={[styles.editBtn, { borderColor: theme.border, marginBottom: 50 }]}
             onPress={() => alert("Para editar seus dados, entre em contato com a administração.")}
           >
             <Text style={[styles.editBtnText, { color: theme.subText }]}>SOLICITAR ALTERAÇÃO</Text>
@@ -157,10 +159,25 @@ export default function MeusDados() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingTop: 60, paddingHorizontal: 20, marginBottom: 20 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', marginLeft: 15 },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingTop: 60, 
+    paddingHorizontal: 20, 
+    marginBottom: 20 
+  },
+  arrowContainer: { 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    marginLeft: 15,
+    flex: 1 
+  },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 25 },
+  content: { padding: 25, paddingBottom: 100 }, 
   profileSection: { alignItems: 'center', marginBottom: 35 },
   avatarCircle: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   userName: { fontSize: 22, fontWeight: 'bold' },

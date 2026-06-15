@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from "re
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
-import { useAppTheme } from "@/context/ThemeContext"; // Importando o hook do tema global
+import { useAppTheme } from "@/context/ThemeContext";
 
 import ArrowBack from '@/components/ArrowVoltar';
 import InputField from "@/components/InputField";
@@ -11,22 +11,27 @@ import PrimaryButton from "@/components/PrimaryButton";
 
 export default function GestaoArea() {
   const router = useRouter();
-  const { idArea, nomeArea, valorAtual } = useLocalSearchParams();
-  const { theme } = useAppTheme(); // Injetando o cérebro do tema de forma reativa
+  const params = useLocalSearchParams();
+  const { theme } = useAppTheme();
   
   const [loading, setLoading] = useState(false);
-  const [nome, setNome] = useState(nomeArea as string || "");
-  const [preco, setPreco] = useState(valorAtual as string || "");
+  
+  // Estados para os novos campos
+  const [nome, setNome] = useState((params.nomeArea as string) || "");
+  const [preco, setPreco] = useState((params.valorAtual as string) || "");
+  const [capacidade, setCapacidade] = useState("");
+  const [tipoCobranca, setTipoCobranca] = useState("Diária");
+  const [taxaLimpeza, setTaxaLimpeza] = useState("0.00");
+  const [regras, setRegras] = useState("");
 
   async function handleSalvarAlteracoes() {
     if (!nome || !preco) {
-      Alert.alert("Erro", "Preencha todos os campos.");
+      Alert.alert("Erro", "Preencha pelo menos Nome e Preço.");
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Descobre quem é o administrador logado e pega o ID do condomínio dele
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
@@ -37,48 +42,41 @@ export default function GestaoArea() {
         .maybeSingle();
 
       const idCondominio = adminData?.id_condominio;
-
       if (!idCondominio) {
-        Alert.alert("Erro", "Condomínio não encontrado para este perfil.");
+        Alert.alert("Erro", "Condomínio não encontrado.");
         setLoading(false);
         return;
       }
 
-      // Trata o número para não dar erro com vírgula no banco
-      const precoFormatado = parseFloat(preco.replace(',', '.'));
+      const dadosParaSalvar = {
+        nome: nome,
+        valor_reserva: parseFloat(preco.replace(',', '.')),
+        capacidade: parseInt(capacidade) || 0,
+        tipo_cobranca: tipoCobranca,
+        taxa_limpeza: parseFloat(taxaLimpeza.replace(',', '.')),
+        regras: regras,
+        id_condominio: idCondominio
+      };
 
-      // 2. Verifica se está editando uma área existente ou criando uma nova
-      if (idArea) {
-        // MODO EDIÇÃO
+      if (params.idArea) {
         const { error } = await supabase
           .from('tb_area_comum')
-          .update({
-            nome: nome,
-            valor_reserva: precoFormatado
-          })
-          .eq('id_area', idArea);
-
+          .update(dadosParaSalvar)
+          .eq('id_area', params.idArea);
         if (error) throw error;
-        Alert.alert("Sucesso", "Configurações da área atualizadas!");
-
+        Alert.alert("Sucesso", "Área atualizada!");
       } else {
-        // MODO CRIAÇÃO (Adiciona o id_condominio para o morador poder ver!)
         const { error } = await supabase
           .from('tb_area_comum')
-          .insert({
-            nome: nome,
-            valor_reserva: precoFormatado,
-            id_condominio: idCondominio
-          });
-
+          .insert(dadosParaSalvar);
         if (error) throw error;
-        Alert.alert("Sucesso", "Nova área comum cadastrada!");
+        Alert.alert("Sucesso", "Nova área cadastrada!");
       }
 
-      router.back(); // Volta para a tela anterior
+      router.back();
     } catch (error: any) {
-      console.log("Erro ao salvar área:", error);
-      Alert.alert("Erro", "Não foi possível salvar a área.");
+      console.log(error);
+      Alert.alert("Erro", "Não foi possível salvar.");
     } finally {
       setLoading(false);
     }
@@ -92,24 +90,14 @@ export default function GestaoArea() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Removidas as injeções manuais de cor de fundo que estavam quebrando o InputField */}
-        <InputField 
-          label="NOME DA ÁREA"
-          value={nome}
-          onChangeText={setNome}
-          icon="business-outline"
-        />
+        <InputField label="NOME DA ÁREA" value={nome} onChangeText={setNome} icon="business-outline" />
+        <InputField label="VALOR BASE (R$)" value={preco} onChangeText={setPreco} keyboardType="numeric" icon="cash-outline" />
+        <InputField label="CAPACIDADE (PESSOAS)" value={capacidade} onChangeText={setCapacidade} keyboardType="numeric" icon="people-outline" />
+        <InputField label="TIPO COBRANÇA" value={tipoCobranca} onChangeText={setTipoCobranca} placeholder="Hora ou Diária" icon="calendar-number-outline" />
+        <InputField label="TAXA DE LIMPEZA (R$)" value={taxaLimpeza} onChangeText={setTaxaLimpeza} keyboardType="numeric" icon="brush-outline" />
+        <InputField label="REGRAS DE USO" value={regras} onChangeText={setRegras} icon="document-text-outline" multiline />
 
-        <InputField 
-          label="VALOR DA RESERVA (R$)"
-          placeholder="Ex: 150.00"
-          value={preco}
-          onChangeText={setPreco}
-          keyboardType="numeric"
-          icon="cash-outline"
-        />
-
-        <View style={{ marginTop: 20 }}>
+        <View style={{ marginTop: 20, marginBottom: 50 }}>
           {loading ? (
             <ActivityIndicator size="large" color={COLORS.primary} />
           ) : (
@@ -125,5 +113,5 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingTop: 60, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' },
   headerTitle: { fontSize: 20, fontWeight: 'bold', marginLeft: 15 },
-  content: { padding: 25 }
+  content: { padding: 25, paddingBottom: 100 }
 });

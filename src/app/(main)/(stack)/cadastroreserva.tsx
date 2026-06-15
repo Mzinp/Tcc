@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Platform } from "react-native";
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  Alert, 
+  ActivityIndicator, 
+  TouchableOpacity, 
+  Platform 
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { supabase } from "@/lib/supabase";
 import { COLORS } from "@/consts/colors";
@@ -16,15 +25,17 @@ export default function CadastroReserva() {
   const { theme } = useAppTheme(); 
   
   const [loading, setLoading] = useState(false);
-  const [precoArea, setPrecoArea] = useState(0);
-  const [idCondominio, setIdCondominio] = useState<string | null>(null);
+  const [detalhesArea, setDetalhesArea] = useState<any>(null);
   
+  // Data e Horários
   const [dataObjeto, setDataObjeto] = useState(new Date());
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [dataFormatada, setDataFormatada] = useState("");
+  const [horaInicio, setHoraInicio] = useState(new Date());
+  const [horaFim, setHoraFim] = useState(new Date(new Date().setHours(new Date().getHours() + 1)));
   
-  // Seus campos que eu tinha esquecido!
-  const [horario, setHorario] = useState("");
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showTimeInicio, setShowTimeInicio] = useState(false);
+  const [showTimeFim, setShowTimeFim] = useState(false);
+  
   const [observacao, setObservacao] = useState("");
 
   useEffect(() => {
@@ -33,94 +44,49 @@ export default function CadastroReserva() {
 
   async function carregarDadosIniciais() {
     try {
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('tb_area_comum')
-            .select('valor_reserva, id_condominio')
+            .select('*')
             .eq('id_area', params.areaId)
             .single();
-        
-        if (data) {
-          setPrecoArea(data.valor_reserva || 0);
-          setIdCondominio(data.id_condominio);
-        }
+        if (data) setDetalhesArea(data);
     } catch (e) {
-        console.log("Erro ao buscar preço");
+        console.log("Erro ao buscar detalhes da área");
     }
   }
 
-  const onChangeDate = (event: any, selectedDate?: Date) => {
-    setShowCalendar(Platform.OS === "ios"); 
-    if (selectedDate) {
-      setDataObjeto(selectedDate);
-      const dia = String(selectedDate.getDate()).padStart(2, '0');
-      const mes = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const ano = selectedDate.getFullYear();
-      setDataFormatada(`${dia}/${mes}/${ano}`);
-    }
-  };
+  // Cálculo Dinâmico
+  const diffMs = horaFim.getTime() - horaInicio.getTime();
+  const diffHoras = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
+  const valorPorHora = detalhesArea?.tipo_cobranca === 'Hora' ? (detalhesArea?.valor_reserva * diffHoras) : detalhesArea?.valor_reserva;
+  const valorTotalFinal = (valorPorHora || 0) + (Number(detalhesArea?.taxa_limpeza) || 0);
 
   async function handleSalvarReserva() {
-    if (!dataFormatada || !horario) {
-      Alert.alert("Atenção", "Preencha a data e o horário.");
-      return;
-    }
-
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Pega o id do morador correto
-      const { data: morador } = await supabase
-        .from('tb_morador')
-        .select('id_morador')
-        .eq('id_morador', user.id)
-        .single();
-
-      if (!morador) {
-        Alert.alert("Erro", "Apenas moradores podem fazer reservas.");
-        setLoading(false);
-        return;
-      }
-
       const dataParaBanco = dataObjeto.toISOString().split('T')[0]; 
+      const horarioString = `${horaInicio.getHours()}:${String(horaInicio.getMinutes()).padStart(2,'0')} às ${horaFim.getHours()}:${String(horaFim.getMinutes()).padStart(2,'0')}`;
 
-      // Verificação de conflito de data
-      const { data: conflito } = await supabase
-        .from('tb_reserva')
-        .select('id_reserva')
-        .eq('id_area', params.areaId)
-        .eq('data_reserva', dataParaBanco)
-        .neq('status', 'Recusado')
-        .maybeSingle();
-
-      if (conflito) {
-        Alert.alert("Data Ocupada", "Este espaço já está reservado para este dia.");
-        setLoading(false);
-        return;
-      }
-
-      // Insert completo para o banco do Mateus
       const { error } = await supabase.from('tb_reserva').insert([{
-        id_morador: morador.id_morador,
-        id_condominio: idCondominio,
+        id_morador: user.id,
+        id_condominio: detalhesArea?.id_condominio,
         id_area: params.areaId,
         area_comum: params.areaNome, 
         data_reserva: dataParaBanco,
-        horario: horario,
+        horario: horarioString,
         observacao: observacao,
-        valor_total: precoArea, 
+        valor_total: valorTotalFinal, 
         status: 'Pendente'
       }]);
 
       if (error) throw error;
-
-      Alert.alert("Sucesso", "Sua reserva foi enviada para aprovação do síndico!");
+      Alert.alert("Sucesso", "Reserva enviada para aprovação!");
       router.back();
-
     } catch (error) {
-      console.log(error);
-      Alert.alert("Erro", "Falha ao salvar reserva. Tente novamente.");
+      Alert.alert("Erro", "Falha ao salvar reserva.");
     } finally {
       setLoading(false);
     }
@@ -133,76 +99,43 @@ export default function CadastroReserva() {
         <Text style={[styles.headerTitle, { color: theme.text }]}>Nova Reserva</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.infoBox}>
-          <Text style={styles.label}>ESPAÇO SELECIONADO</Text>
-          <View style={styles.areaBadge}>
-            <Text style={styles.areaText}>{params.areaNome || "Área Comum"}</Text>
-          </View>
+          <Text style={styles.label}>ESPAÇO</Text>
+          <View style={styles.areaBadge}><Text style={styles.areaText}>{params.areaNome}</Text></View>
         </View>
 
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.label}>DATA DA RESERVA</Text>
-          <TouchableOpacity 
-            style={[styles.calendarTrigger, { backgroundColor: theme.card || theme.input, borderColor: theme.border }]} 
-            onPress={() => setShowCalendar(true)}
-          >
-            <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-            <Text style={[styles.calendarText, { color: dataFormatada ? theme.text : theme.subText }]}>
-              {dataFormatada || "Selecionar data no calendário"}
-            </Text>
+        <Text style={styles.label}>DATA DA RESERVA</Text>
+        <TouchableOpacity style={[styles.calendarTrigger, { backgroundColor: theme.card }]} onPress={() => setShowCalendar(true)}>
+          <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+          <Text style={{color: theme.text, marginLeft: 10}}>{dataObjeto.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        {showCalendar && <DateTimePicker value={dataObjeto} mode="date" onChange={(e, d) => { setShowCalendar(false); if(d) setDataObjeto(d); }} />}
+
+        <View style={styles.row}>
+          <TouchableOpacity style={[styles.timeBox, {backgroundColor: theme.card}]} onPress={() => setShowTimeInicio(true)}>
+            <Text style={styles.label}>INÍCIO</Text>
+            <Text style={{color: theme.text}}>{horaInicio.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
           </TouchableOpacity>
-
-          {showCalendar && (
-            <DateTimePicker
-              value={dataObjeto}
-              mode="date"
-              display="calendar"
-              minimumDate={new Date()} 
-              onChange={onChangeDate}
-            />
-          )}
-
-          <InputField 
-            label="HORÁRIO"
-            placeholder="Ex: 14:00 às 22:00"
-            value={horario}
-            onChangeText={setHorario}
-            icon="time-outline"
-          />
-
-          <InputField 
-            label="OBSERVAÇÕES (OPCIONAL)"
-            placeholder="Ex: Aniversário de 15 anos..."
-            value={observacao}
-            onChangeText={setObservacao}
-            icon="document-text-outline"
-            multiline
-          />
+          <TouchableOpacity style={[styles.timeBox, {backgroundColor: theme.card}]} onPress={() => setShowTimeFim(true)}>
+            <Text style={styles.label}>FIM</Text>
+            <Text style={{color: theme.text}}>{horaFim.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={[styles.priceCard, { backgroundColor: theme.card || theme.input, borderColor: theme.border }]}>
+        {showTimeInicio && <DateTimePicker value={horaInicio} mode="time" is24Hour={true} onChange={(e, d) => { setShowTimeInicio(false); if(d) setHoraInicio(d); }} />}
+        {showTimeFim && <DateTimePicker value={horaFim} mode="time" is24Hour={true} onChange={(e, d) => { setShowTimeFim(false); if(d) setHoraFim(d); }} />}
+
+        <InputField label="OBSERVAÇÕES" value={observacao} onChangeText={setObservacao} icon="document-text-outline" multiline />
+
+        <View style={[styles.priceCard, { backgroundColor: theme.card }]}>
             <View>
-                <Text style={[styles.priceLabel, { color: theme.subText }]}>Valor do Espaço</Text>
-                <Text style={[styles.priceValue, { color: COLORS.primary }]}>R$ {precoArea.toFixed(2)}</Text>
+                <Text style={[styles.priceLabel, { color: theme.subText }]}>Total a Pagar ({detalhesArea?.tipo_cobranca})</Text>
+                <Text style={[styles.priceValue, { color: COLORS.primary }]}>R$ {valorTotalFinal.toFixed(2)}</Text>
             </View>
-            <Ionicons name="cash-outline" size={30} color={COLORS.primary} />
         </View>
 
-        <View style={{ marginTop: 30 }}>
-          {loading ? (
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          ) : (
-            <PrimaryButton 
-              title="CONFIRMAR RESERVA" 
-              onPress={handleSalvarReserva} 
-            />
-          )}
-        </View>
-
-        <Text style={[styles.footerNote, { color: theme.subText }]}>
-          *A reserva está sujeita a aprovação do síndico. O valor será incluído no próximo boleto do condomínio.
-        </Text>
+        <PrimaryButton title="CONFIRMAR RESERVA" onPress={handleSalvarReserva} />
       </ScrollView>
     </View>
   );
@@ -210,32 +143,17 @@ export default function CadastroReserva() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingTop: 60, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  header: { paddingTop: 60, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center' },
   headerTitle: { fontSize: 22, fontWeight: 'bold', marginLeft: 15 },
-  content: { padding: 25 },
-  infoBox: { marginBottom: 10 },
-  label: { fontSize: 10, fontWeight: '900', color: COLORS.primary, marginBottom: 8, letterSpacing: 1 },
-  areaBadge: { backgroundColor: 'rgba(45, 121, 243, 0.1)', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary },
-  areaText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 16 },
-  calendarTrigger: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    padding: 18, 
-    borderRadius: 15, 
-    borderWidth: 1, 
-    marginBottom: 25 
-  },
-  calendarText: { marginLeft: 12, fontSize: 16 },
-  priceCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 10
-  },
-  priceLabel: { fontSize: 12, fontWeight: 'bold', marginBottom: 5 },
-  priceValue: { fontSize: 22, fontWeight: 'bold' },
-  footerNote: { textAlign: 'center', fontSize: 12, marginTop: 25, lineHeight: 18, paddingHorizontal: 10 }
+  content: { padding: 25, paddingBottom: 100 },
+  infoBox: { marginBottom: 15 },
+  label: { fontSize: 10, fontWeight: '900', color: COLORS.primary, marginBottom: 8 },
+  areaBadge: { padding: 15, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary },
+  areaText: { color: COLORS.primary, fontWeight: 'bold' },
+  calendarTrigger: { flexDirection: 'row', padding: 18, borderRadius: 15, borderWidth: 1, marginBottom: 20 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  timeBox: { flex: 0.48, padding: 15, borderRadius: 15, borderWidth: 1, alignItems: 'center' },
+  priceCard: { padding: 20, borderRadius: 20, borderWidth: 1, marginTop: 10, marginBottom: 20 },
+  priceLabel: { fontSize: 12, fontWeight: 'bold' },
+  priceValue: { fontSize: 22, fontWeight: 'bold' }
 });

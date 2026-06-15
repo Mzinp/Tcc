@@ -1,6 +1,10 @@
+import { FormularioSelecaoNative } from "@components/input/autoCompletar";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -9,12 +13,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
-  ActivityIndicator,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
-import { Ionicons } from "@expo/vector-icons"; 
-import { FormularioSelecaoNative } from "@components/input/autoCompletar";
 
 // Funções de máscara isoladas fora do componente para melhor performance
 const maskCPF = (value: string) => {
@@ -126,7 +126,7 @@ export default function CadastroMorador() {
 
         // 4. Redirecionamento para a tela de sucesso
         router.replace({
-          pathname: "/(main)/(modal)/sucesso",
+          pathname: "/(main)/(modal)/sucesso" as any,
           params: {
             mensagem: "Conta criada com sucesso! Faça login para continuar.",
             proximaTela: "/(auth)/login",
@@ -145,7 +145,10 @@ export default function CadastroMorador() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.background}
     >
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Olá, Morador!</Text>
         <Text style={styles.subtitle}>
           Crie sua conta para acessar o Vizzo do seu prédio.
@@ -244,8 +247,12 @@ export default function CadastroMorador() {
             onPress={() => setAceitouTermos(!aceitouTermos)}
             activeOpacity={0.7}
           >
-            <View style={[styles.checkbox, aceitouTermos && styles.checkboxAtivo]}>
-              {aceitouTermos && <Ionicons name="checkmark" size={14} color="#fff" />}
+            <View
+              style={[styles.checkbox, aceitouTermos && styles.checkboxAtivo]}
+            >
+              {aceitouTermos && (
+                <Ionicons name="checkmark" size={14} color="#fff" />
+              )}
             </View>
             <Text style={styles.checkboxText}>
               Li e concordo com os{" "}
@@ -278,15 +285,58 @@ const styles = StyleSheet.create({
   background: { flex: 1, backgroundColor: "#0f1111" },
   container: { padding: 30, paddingTop: 60, paddingBottom: 60 },
   title: { color: "#fff", fontSize: 28, fontWeight: "800" },
-  subtitle: { color: "#2d79f3", fontSize: 14, marginBottom: 30, fontWeight: "500" },
+  subtitle: {
+    color: "#2d79f3",
+    fontSize: 14,
+    marginBottom: 30,
+    fontWeight: "500",
+  },
   form: { gap: 5 },
-  label: { color: "#8b8e98", fontSize: 10, fontWeight: "700", letterSpacing: 1.5, marginBottom: 5 },
-  input: { backgroundColor: "#1a1d1d", borderWidth: 1, borderColor: "#353838", borderRadius: 12, height: 55, paddingHorizontal: 15, color: "#fff", marginBottom: 15 },
-  checkboxContainer: { flexDirection: "row", alignItems: "center", marginTop: 5, marginBottom: 15, paddingRight: 20 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: "#353838", backgroundColor: "#1a1d1d", justifyContent: "center", alignItems: "center", marginRight: 12 },
+  label: {
+    color: "#8b8e98",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginBottom: 5,
+  },
+  input: {
+    backgroundColor: "#1a1d1d",
+    borderWidth: 1,
+    borderColor: "#353838",
+    borderRadius: 12,
+    height: 55,
+    paddingHorizontal: 15,
+    color: "#fff",
+    marginBottom: 15,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    marginBottom: 15,
+    paddingRight: 20,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#353838",
+    backgroundColor: "#1a1d1d",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
   checkboxAtivo: { backgroundColor: "#2d79f3", borderColor: "#2d79f3" },
   checkboxText: { color: "#8b8e98", fontSize: 12, lineHeight: 18, flex: 1 },
   linkText: { color: "#2d79f3", fontWeight: "bold" },
-  button: { backgroundColor: "#2d79f3", height: 60, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 10 },
+  button: {
+    backgroundColor: "#2d79f3",
+    height: 60,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
+  },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
 });

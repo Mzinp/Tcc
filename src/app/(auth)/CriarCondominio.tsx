@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -10,7 +11,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator
 } from "react-native";
 import { supabase } from "../../lib/supabase";
 
@@ -57,7 +57,9 @@ export default function CriarCondominio() {
 
     if (cepLimpo.length === 8) {
       try {
-        const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+        const response = await fetch(
+          `https://viacep.com.br/ws/${cepLimpo}/json/`,
+        );
         const data = await response.json();
 
         if (data.erro) {
@@ -84,7 +86,9 @@ export default function CriarCondominio() {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!user) {
         Alert.alert("Erro", "Sessão expirada. Faça login novamente.");
@@ -98,7 +102,7 @@ export default function CriarCondominio() {
           {
             nome_condominio: nome,
             cnpj: cnpj.replace(/\D/g, ""), // Salva limpo no banco
-            cep: cep.replace(/\D/g, ""),   // Salva limpo no banco
+            cep: cep.replace(/\D/g, ""), // Salva limpo no banco
             logradouro,
             numero,
             complemento,
@@ -107,7 +111,7 @@ export default function CriarCondominio() {
             estado,
           },
         ])
-        .select() 
+        .select()
         .single();
 
       if (condoError) {
@@ -125,18 +129,20 @@ export default function CriarCondominio() {
         }
 
         router.replace({
-          pathname: "/(main)/(modal)/sucesso",
-          params: { 
+          pathname: "/(main)/(modal)/sucesso" as any,
+          params: {
             mensagem: `Condomínio registrado!\nCódigo dos moradores: ${condoData.codigo_acesso}`,
-            proximaTela: "/(auth)/login" 
-          }
+            proximaTela: "/(auth)/login",
+          },
         });
-        
+
         await supabase.auth.signOut();
       }
-
     } catch (error: any) {
-      Alert.alert("Erro ao salvar", error.message || "Ocorreu um erro inesperado.");
+      Alert.alert(
+        "Erro ao salvar",
+        error.message || "Ocorreu um erro inesperado.",
+      );
     } finally {
       setLoading(false);
     }
