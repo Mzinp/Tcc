@@ -2,7 +2,7 @@ import { useAppTheme } from "@/context/ThemeContext";
 import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Platform
 } from "react-native";
+
 
 const getIconeParaServico = (nome: string) => {
   const n = nome.toLowerCase();
@@ -96,28 +98,33 @@ export default function Marketplace() {
       setLoading(false);
     }
   }
+  
+const confirmar = (mensagem: string, onConfirm: () => void) => {
+  if (Platform.OS === "web") {
+    if (window.confirm(mensagem)) onConfirm();
+  } else {
+    Alert.alert("Excluir Anúncio", mensagem, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Excluir", style: "destructive", onPress: onConfirm },
+    ]);
+  }
+};
 
-  const excluirServico = async (idServico: string) => {
-    Alert.alert(
-      "Excluir Anúncio",
-      "Tem certeza que deseja remover este anúncio?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            const { error } = await supabase
-              .from("tb_servico")
-              .delete()
-              .eq("id_servico", idServico);
-            if (error) Alert.alert("Erro", "Não foi possível excluir.");
-            else carregarServicos();
-          },
-        },
-      ],
-    );
-  };
+const excluirServico = (idServico: string) => {
+  confirmar("Tem certeza que deseja remover este anúncio?", async () => {
+    const { error } = await supabase
+      .from("tb_servico")
+      .delete()
+      .eq("id_servico", idServico);
+
+    if (error) {
+      Alert.alert("Erro", error.message);
+      return;
+    }
+
+    setServicos((prev) => prev.filter((s) => s.id !== idServico));
+  });
+};
 
   useFocusEffect(
     useCallback(() => {
