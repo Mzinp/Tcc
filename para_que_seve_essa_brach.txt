@@ -1,0 +1,1 @@
+pelo que eu entendi essa branch foi criada antes do build do projeto para apk
