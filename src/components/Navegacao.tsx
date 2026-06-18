@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface NavegacaoProps {
   title?: string;
@@ -18,6 +19,8 @@ interface NavegacaoProps {
 export default function Navegacao({ title }: NavegacaoProps) {
   const pathname = usePathname();
   const { theme } = useAppTheme();
+  const insets = useSafeAreaInsets(); // ← pega as margens seguras do dispositivo
+  
 
   const menuItems = [
     { name: "Início", icon: "home", route: "/(main)/home" },
@@ -30,7 +33,12 @@ export default function Navegacao({ title }: NavegacaoProps) {
     <View
       style={[
         styles.navBar,
-        { backgroundColor: theme.card, borderTopColor: theme.border },
+        {
+          backgroundColor: theme.card,
+          borderTopColor: theme.border,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 10, // ← usa o inset real
+          height: 60 + (insets.bottom > 0 ? insets.bottom : 10),
+        },
       ]}
     >
       {menuItems.map((item) => {
@@ -67,14 +75,12 @@ export default function Navegacao({ title }: NavegacaoProps) {
 const styles = StyleSheet.create({
   navBar: {
     flexDirection: "row",
-    height: Platform.OS === "ios" ? 85 : 70,
     borderTopWidth: 1,
     justifyContent: "space-around",
     alignItems: "center",
     position: "absolute",
     bottom: 0,
     width: "100%",
-    paddingBottom: Platform.OS === "ios" ? 20 : 10,
     elevation: 20,
     shadowColor: "#000",
     shadowOpacity: 0.1,

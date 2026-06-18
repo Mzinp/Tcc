@@ -4,11 +4,11 @@
     "slug": "Vizzo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/img/logo.png",
+    "icon": "./src/assets/img/logo.png",
     "scheme": "vizzo",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/img/logo.png",
+      "image": "./src/assets/img/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -18,14 +18,14 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/img/logo.png"
+        "foregroundImage": "./src/assets/img/logo.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "assets/img/logo.png"
+      "favicon": "./src/assets/img/logo.png"
     },
     "plugins": [
       "expo-router",
