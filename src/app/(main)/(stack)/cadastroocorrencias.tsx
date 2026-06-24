@@ -8,6 +8,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 
 export default function CadastroOcorrencia() {
   const { theme } = useAppTheme();
@@ -24,6 +26,51 @@ export default function CadastroOcorrencia() {
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [fotoUri, setFotoUri] = useState<string | null>(null);
+
+  // ABRIR CÂMERA
+  async function abrirCamera() {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permissão Necessária", "Precisamos de acesso à câmera para registrar a foto da ocorrência.");
+        return;
+      }
+
+      const resultado = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+      });
+
+      if (!resultado.canceled && resultado.assets) {
+        setFotoUri(resultado.assets[0].uri);
+      }
+    } catch (error) {
+      console.log("Erro ao abrir câmera:", error);
+    }
+  }
+
+  // ALERTA LEGAL
+  const handleVerificarTermosMidia = () => {
+    const mensagemAlert =
+      "De acordo com o Art. 20 do Código Civil e as normas da LGPD, é expressamente proibido registrar, expor ou compartilhar imagens e vídeos de outros moradores, funcionários ou terceiros sem autorização prévia por escrito.\n\nAo continuar, você assume total responsabilidade civil e criminal pelo conteúdo anexado, garantindo que ele possui fins exclusivamente de registro administrativo e segurança interna.";
+
+    if (Platform.OS === "web") {
+      const aceitou = window.confirm(`⚖️ Restrição Legal de Imagem\n\n${mensagemAlert}\n\nDeseja aceitar e continuar?`);
+      if (aceitou) abrirCamera();
+      return;
+    }
+
+    Alert.alert(
+      "⚖️ Restrição Legal de Imagem",
+      mensagemAlert,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Aceitar e Câmera", onPress: abrirCamera },
+      ],
+      { cancelable: false }
+    );
+  };
 
   async function handleEnviar() {
     if (!titulo || !descricao) {
@@ -34,9 +81,7 @@ export default function CadastroOcorrencia() {
     setLoading(true);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data: morador } = await supabase
@@ -47,7 +92,27 @@ export default function CadastroOcorrencia() {
 
       if (!morador) throw new Error("Perfil de morador não encontrado");
 
-      // Inserção simplificada na tabela sem o campo foto_url
+      let fotoUrlFinal = null;
+
+      if (fotoUri) {
+        const nomeArquivo = `ocorrencia-${user.id}-${Date.now()}.jpg`;
+
+        const respostaFetch = await fetch(fotoUri);
+        const blob = await respostaFetch.blob();
+
+        const { error: storageError } = await supabase.storage
+          .from("ocorrencias")
+          .upload(nomeArquivo, blob, { contentType: "image/jpeg" });
+
+        if (storageError) throw storageError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("ocorrencias")
+          .getPublicUrl(nomeArquivo);
+
+        fotoUrlFinal = publicUrl;
+      }
+
       const { error } = await supabase.from("tb_ocorrencias").insert([
         {
           id_condominio: morador.id_condominio,
@@ -55,6 +120,7 @@ export default function CadastroOcorrencia() {
           titulo: titulo,
           descricao: descricao,
           status: "Aberto",
+          foto_url: fotoUrlFinal,
         },
       ]);
 
@@ -62,9 +128,7 @@ export default function CadastroOcorrencia() {
 
       router.push({
         pathname: "/(main)/(modal)/sucesso" as any,
-        params: {
-          mensagem: "Sua ocorrência foi enviada ao síndico com sucesso!",
-        },
+        params: { mensagem: "Sua ocorrência foi enviada ao síndico com sucesso!" },
       });
     } catch (error) {
       console.log(error);
@@ -79,15 +143,10 @@ export default function CadastroOcorrencia() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: theme.bg }]}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <ArrowBack cor={theme.text} />
-          <Text style={[styles.title, { color: theme.text }]}>
-            Registrar Ocorrência
-          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>Registrar Ocorrência</Text>
           <Text style={[styles.subtitle, { color: theme.subText }]}>
             Relate problemas ou incidentes no condomínio
           </Text>
@@ -95,15 +154,7 @@ export default function CadastroOcorrencia() {
 
         <View style={styles.form}>
           <Text style={styles.label}>ASSUNTO</Text>
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                backgroundColor: theme.input || theme.border,
-                borderColor: theme.border,
-              },
-            ]}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: theme.input || theme.border, borderColor: theme.border }]}>
             <TextInput
               style={[styles.input, { color: theme.text }]}
               placeholder="Ex: Vazamento no corredor, Barulho excessivo..."
@@ -114,21 +165,9 @@ export default function CadastroOcorrencia() {
           </View>
 
           <Text style={styles.label}>DESCRIÇÃO DETALHADA</Text>
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                backgroundColor: theme.input || theme.border,
-                borderColor: theme.border,
-                height: 150,
-              },
-            ]}
-          >
+          <View style={[styles.inputContainer, { backgroundColor: theme.input || theme.border, borderColor: theme.border, height: 150 }]}>
             <TextInput
-              style={[
-                styles.input,
-                { color: theme.text, textAlignVertical: "top", paddingTop: 15 },
-              ]}
+              style={[styles.input, { color: theme.text, textAlignVertical: "top", paddingTop: 15 }]}
               multiline
               numberOfLines={6}
               placeholder="Descreva o que aconteceu com o máximo de detalhes possível..."
@@ -137,6 +176,25 @@ export default function CadastroOcorrencia() {
               onChangeText={setDescricao}
             />
           </View>
+
+          {/* ANEXAR FOTO */}
+          {fotoUri ? (
+            <View style={[styles.previewContainer, { borderColor: theme.border }]}>
+              <Image source={{ uri: fotoUri }} style={styles.previewImage} />
+              <TouchableOpacity style={styles.removeImageBtn} onPress={() => setFotoUri(null)}>
+                <Ionicons name="trash" size={20} color="white" />
+                <Text style={styles.removeImageText}>Remover Foto</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.attachButton, { borderColor: theme.border }]}
+              onPress={handleVerificarTermosMidia}
+            >
+              <Ionicons name="camera-outline" size={24} color={COLORS.red} />
+              <Text style={[styles.attachText, { color: theme.text }]}>Anexar Foto (Câmera)</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.mainButton, loading && { opacity: 0.7 }]}
@@ -154,8 +212,7 @@ export default function CadastroOcorrencia() {
           </TouchableOpacity>
 
           <Text style={[styles.warningText, { color: theme.subText }]}>
-            Sua ocorrência será registrada com seu nome e unidade para que o
-            síndico possa entrar em contato.
+            Sua ocorrência será registrada com seu nome e unidade para que o síndico possa entrar em contato.
           </Text>
         </View>
       </ScrollView>
@@ -170,21 +227,40 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: "bold", marginTop: 15 },
   subtitle: { fontSize: 14, marginTop: 5 },
   form: { padding: 25 },
-  label: {
-    color: COLORS.red,
-    fontSize: 11,
-    fontWeight: "900",
-    marginBottom: 10,
-    letterSpacing: 1,
-  },
-  inputContainer: {
-    borderWidth: 1,
-    borderRadius: 15,
-    marginBottom: 20,
-    paddingHorizontal: 15,
-    minHeight: 55,
-  },
+  label: { color: COLORS.red, fontSize: 11, fontWeight: "900", marginBottom: 10, letterSpacing: 1 },
+  inputContainer: { borderWidth: 1, borderRadius: 15, marginBottom: 20, paddingHorizontal: 15, minHeight: 55 },
   input: { flex: 1, fontSize: 15 },
+  attachButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    marginBottom: 30,
+  },
+  attachText: { marginLeft: 10, fontWeight: "bold", fontSize: 14 },
+  previewContainer: {
+    borderRadius: 15,
+    borderWidth: 1,
+    overflow: "hidden",
+    marginBottom: 30,
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
+  previewImage: { width: "100%", height: 200, resizeMode: "cover" },
+  removeImageBtn: {
+    flexDirection: "row",
+    position: "absolute",
+    bottom: 10,
+    backgroundColor: "rgba(255, 59, 48, 0.9)",
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  removeImageText: { color: "white", fontWeight: "bold", marginLeft: 5 },
   mainButton: {
     backgroundColor: COLORS.red,
     padding: 18,
@@ -195,16 +271,6 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginTop: 10,
   },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
-    marginLeft: 10,
-    letterSpacing: 1,
-  },
-  warningText: {
-    textAlign: "center",
-    fontSize: 12,
-    marginTop: 20,
-    lineHeight: 18,
-  },
+  buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, letterSpacing: 1 },
+  warningText: { textAlign: "center", fontSize: 12, marginTop: 20, lineHeight: 18 },
 });
